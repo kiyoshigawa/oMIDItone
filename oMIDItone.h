@@ -13,6 +13,9 @@ analog readings to correct the frequency being played.
 //We will need the SPI library to communicate with the MCP4151 chips.
 #include <SPI.h>
 
+//We will also use the fancy faster ADC library from pedvide for Teensy:
+#include "ADC-master/ADC.h"
+
 //comment this to disable serial functions for testing notes.
 //This will send debug messages over the USB serial port if it is defined.
 //It should start the Serial if it is not yet running in the init function.
@@ -39,10 +42,10 @@ analog readings to correct the frequency being played.
 #define NUM_FREQ_READINGS 4
 
 //this defines how long to test each note until it is stabilized in the strtup test in ms
-#define STABILIZATION_TIME 2000
+#define STABILIZATION_TIME 4000
 
 //This is the analog read threshold for a rising edge to count the frequency.
-#define RISING_EDGE_THRESHOLD 100
+#define RISING_EDGE_THRESHOLD 50
 
 //this is a jitter value to randomize the resistance in an attempt to counter the frequency variation around a specific resistance value. it is measured in resistance steps
 #define JITTER 10
@@ -193,6 +196,9 @@ class oMIDItone {
     uint16_t cs1_pin;
     uint16_t cs2_pin;
     uint16_t analog_feedback_pin;
+
+    //set up an instanced ADC object for use in the code.
+    ADC *adc = new ADC();
 
 };
 

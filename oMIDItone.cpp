@@ -8,8 +8,9 @@ analog readings to correct the frequency being played.
 #include <Arduino.h>
 #include <SPI.h>
 #include "oMIDItone.h"
+#include "ADC-master/ADC.h"
 
-// constructor function
+//constructor function
 oMIDItone::oMIDItone(uint16_t relay, uint16_t cs1, uint16_t cs2, uint16_t feedback){
   //Declare default values for variables:
   check_note_value = false;
@@ -22,14 +23,17 @@ oMIDItone::oMIDItone(uint16_t relay, uint16_t cs1, uint16_t cs2, uint16_t feedba
   current_pitch_shift = CENTER_PITCH_SHIFT;
   current_resistance = 0;
 
-  // set pin variables based on constructor inputs:
+  //set pin variables based on constructor inputs:
   relay_pin = relay;
   cs1_pin = cs1;
   cs2_pin = cs2;
   analog_feedback_pin = feedback;
+
+  //set up an instanced ADC object for use in the code.
+  ADC *adc = new ADC();
 }
 
-// this will init the pin modes and set up Serial if it's not already running.
+//this will init the pin modes and set up Serial if it's not already running.
 void oMIDItone::init(){
   //start a timer for tracking rising edges.
   last_rising_edge = 0;
@@ -46,6 +50,12 @@ void oMIDItone::init(){
   pinMode(cs2_pin, OUTPUT);
   pinMode(relay_pin, OUTPUT);
   pinMode(analog_feedback_pin, INPUT);
+
+  //set up ADC:
+  adc->setAveraging(0);
+  adc->setResolution(8);
+  adc->setConversionSpeed(ADC_CONVERSION_SPEED::VERY_HIGH_SPEED);
+  adc->setSamplingSpeed(ADC_SAMPLING_SPEED::VERY_HIGH_SPEED);
 
   //turn off relay and all CS pins
   digitalWrite(cs1_pin, HIGH);
@@ -184,7 +194,7 @@ void oMIDItone::set_resistance(uint16_t resistance){
 //This will constantly read the analog input and return true when it detects a rising edge signal.
 //It also updates the current and last rising edge time values.
 bool oMIDItone::is_rising_edge(){
-  uint16_t current_analog_read = analogRead(analog_feedback_pin);
+  uint16_t current_analog_read = adc->analogRead(analog_feedback_pin);
   if(last_rising_edge > MIN_TIME_BETWEEN_RISING_EDGE_MEASUREMENTS){
     if( current_analog_read > RISING_EDGE_THRESHOLD && last_analog_read < RISING_EDGE_THRESHOLD){
       last_analog_read = current_analog_read;
@@ -255,7 +265,6 @@ uint32_t oMIDItone::pitch_adjusted_frequency(uint16_t note, uint16_t pitch_shift
     float frequency_multiplier = 2^(adjustment_factor/12);
     uint32_t adjusted_frequency = midi_freqs[note]*frequency_multiplier;
     return adjusted_frequency;
-    
   }
   else{
     //this shouldn't happen, but return the default if nothing else worked for some reason.
@@ -279,13 +288,6 @@ void oMIDItone::measure_frequency(){
     freq_reading_index = 0;
     //also update the measured_freqs array to be correct for the current resistasnce.
     measured_freqs[current_resistance] = current_freq;
-    for(int i=0; i<NUM_FREQ_READINGS; i++){
-      Serial.print(i);
-      Serial.print(": ");
-      Serial.print(recent_freqs[i]);
-      Serial.print(": ");
-    }
-    Serial.println();
   }
 }
 
@@ -301,17 +303,17 @@ void oMIDItone::adjust_frequency(){
     //this is the range of frequencies acceptable for the current pitch-shifted note being played.
     uint32_t max_allowable_freq = current_desired_freq*(100-ALLOWABLE_NOTE_ERROR)/100;
     uint32_t min_allowable_freq = current_desired_freq*(100+ALLOWABLE_NOTE_ERROR)/100;
+   
     /*
-    Serial.print("Current Frequency: ");
+    Serial.print("cur: ");
     Serial.println(current_freq);
-    Serial.print("Max Frequency: ");
-    Serial.println(max_allowable_freq);
-    Serial.print("Min Frequency: ");
-    Serial.println(min_allowable_freq);
-    Serial.print("Current resistance: ");
+    Serial.print("des: ");
+    Serial.println(current_desired_freq);
+    Serial.print("R: ");
     Serial.println(current_resistance);
     Serial.println();
     */
+
     if(current_freq >= max_allowable_freq && current_freq <= min_allowable_freq){
       //DOn't adjust anything.
     }
