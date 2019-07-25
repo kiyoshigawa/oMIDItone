@@ -1,3 +1,0 @@
-(sym_lib_table
-  (lib (name oMIDItone-Board-rescue)(type Legacy)(uri "${KIPRJMOD}/oMIDItone Board-rescue.lib")(options "")(descr ""))
-)
