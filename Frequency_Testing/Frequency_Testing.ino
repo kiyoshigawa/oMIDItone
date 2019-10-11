@@ -4,7 +4,7 @@
 
 #define MIN_TIME_BETWEEN_STATE_CHANGES 100
 #define NUM_MIDI_NOTES 128
-#define MAX_NOTE 108
+#define MAX_NOTE 128
 //the EMUMIDItone is only HIGH for 1/ON_TIME_DIVISIONS of a cycle at the current frequency.
 #define ON_TIME_DIVISIONS 25
 
