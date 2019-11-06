@@ -198,6 +198,7 @@ void Animation::trigger_event(uint16_t trigger_type){
       .current_frame = 0,
       .color = trigger_rainbow.colors[current_trigger_rainbow_color],
       .offset = random(LC_MAX_OFFSET),
+      .last_update = 0,
       .event_has_completed = false
     };
     add_trigger_event(new_pulse);
@@ -211,6 +212,7 @@ void Animation::trigger_event(uint16_t trigger_type){
       .current_frame = 0,
       .color = adjusted_color,
       .offset = random(LC_MAX_OFFSET),
+      .last_update = 0,
       .event_has_completed = false
     };
     add_trigger_event(new_pulse);
@@ -223,6 +225,7 @@ void Animation::trigger_event(uint16_t trigger_type){
       .current_frame = 0,
       .color = trigger_rainbow.colors[current_trigger_rainbow_color],
       .offset = random(LC_MAX_OFFSET),
+      .last_update = 0,
       .event_has_completed = false
     };
     add_trigger_event(new_pulse);
@@ -678,7 +681,7 @@ void Animation::fill_vu_meter(uint32_t * led_array, uint16_t num_leds, rainbow r
     }
     //Some special first/last pixel conditions:
     else{
-      if( (led == 0) && ( origin_offset < (LC_MAX_OFFSET / num_leds) ) ){
+      if( (led == 0) && ( origin_offset < ((LC_MAX_OFFSET / num_leds)/2) ) ){
         temp_color_array[led] = off;
       }
       //set the last one to the final rainbow color every time, if it is on.

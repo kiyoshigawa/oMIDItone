@@ -224,12 +224,12 @@ rainbow trigger_rb = {
 };
 
 //these are the Animation objects for the heads above - they will control the animation per-head.
-Animation om1_animation = Animation(om1_leds, NUM_LEDS_PER_HEAD, (LC_BG_RAINBOW_SLOW_ROTATE), r1, marquee_rb, trigger_rb, LC_DEFAULT_REFRESH_RATE);
-Animation om2_animation = Animation(om2_leds, NUM_LEDS_PER_HEAD, (LC_BG_RAINBOW_SLOW_ROTATE), r1, marquee_rb, trigger_rb, LC_DEFAULT_REFRESH_RATE);
-Animation om3_animation = Animation(om3_leds, NUM_LEDS_PER_HEAD, (LC_BG_RAINBOW_SLOW_ROTATE | LC_FG_VU_METER), r1, r_vu, trigger_rb, LC_DEFAULT_REFRESH_RATE);
-Animation om4_animation = Animation(om4_leds, NUM_LEDS_PER_HEAD, (LC_BG_RAINBOW_SLOW_ROTATE), r1, marquee_rb, trigger_rb, LC_DEFAULT_REFRESH_RATE);
-Animation om5_animation = Animation(om5_leds, NUM_LEDS_PER_HEAD, (LC_BG_RAINBOW_SLOW_ROTATE), r1, marquee_rb, trigger_rb, LC_DEFAULT_REFRESH_RATE);
-Animation om6_animation = Animation(om6_leds, NUM_LEDS_PER_HEAD, (LC_BG_RAINBOW_SLOW_ROTATE), r1, marquee_rb, trigger_rb, LC_DEFAULT_REFRESH_RATE);
+Animation om1_animation = Animation(om1_leds, NUM_LEDS_PER_HEAD, (LC_BG_RAINBOW_SLOW_ROTATE | LC_FG_MARQUEE_SLOW_FADE), om1_rb, marquee_rb, trigger_rb, LC_DEFAULT_REFRESH_RATE);
+Animation om2_animation = Animation(om2_leds, NUM_LEDS_PER_HEAD, (LC_BG_RAINBOW_SLOW_ROTATE), om2_rb, marquee_rb, trigger_rb, LC_DEFAULT_REFRESH_RATE);
+Animation om3_animation = Animation(om3_leds, NUM_LEDS_PER_HEAD, (LC_BG_RAINBOW_SLOW_ROTATE | LC_FG_VU_METER), om3_rb, r_vu, trigger_rb, LC_DEFAULT_REFRESH_RATE);
+Animation om4_animation = Animation(om4_leds, NUM_LEDS_PER_HEAD, (LC_BG_RAINBOW_SLOW_ROTATE), om4_rb, marquee_rb, trigger_rb, LC_DEFAULT_REFRESH_RATE);
+Animation om5_animation = Animation(om5_leds, NUM_LEDS_PER_HEAD, (LC_BG_RAINBOW_SLOW_ROTATE), om5_rb, marquee_rb, trigger_rb, LC_DEFAULT_REFRESH_RATE);
+Animation om6_animation = Animation(om6_leds, NUM_LEDS_PER_HEAD, (LC_BG_RAINBOW_SLOW_ROTATE), om6_rb, marquee_rb, trigger_rb, LC_DEFAULT_REFRESH_RATE);
 
 //This is the LED strip object to control all the lighting on the board
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(LED_TOTAL_NUM, LED_DATA_PIN, LED_COLOR_ORDER + LED_SPEED);
@@ -561,7 +561,7 @@ void setup(){
   */
   for(int i=0; i<1024; i++){
     oms[2].animation->change_offset(LC_FG, i, 1024);
-    delay(LC_DEFAULT_REFRESH_RATE);
+    delay(1);
     lc.update();
   }
   oms[2].animation->change_offset(LC_FG, 0, 1024);

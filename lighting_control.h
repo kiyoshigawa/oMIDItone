@@ -224,6 +224,7 @@ struct TriggerEvent{
   int32_t current_frame;
   uint32_t color;
   uint16_t offset;
+  elapsedMillis last_update;
   bool event_has_completed;
 };
 
