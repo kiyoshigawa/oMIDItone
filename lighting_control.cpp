@@ -736,7 +736,7 @@ void Animation::add_trigger_event(TriggerEvent event){
   }
   else{
     #ifdef LIGHTING_DEBUG
-      Serial.print("Trigger Event Buffer is Full - New trigger event has not been added.");
+      Serial.println("Trigger Event Buffer is Full - New trigger event has not been added.");
     #endif
   }
 }
