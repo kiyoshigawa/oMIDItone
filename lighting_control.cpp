@@ -316,6 +316,14 @@ void Animation::update_trigger_animations(){
   }
 }
 
+//these return the current fg and bg animation modes:
+uint16_t Animation::current_bg_mode(){
+  return bg_mode;
+}
+uint16_t Animation::current_fg_mode(){
+  return fg_mode;
+}
+
 //this will change the lighting mode, triggering an init(), and resetting all values to their defaults for that lighting mode:
 void Animation::change_lighting_mode(uint16_t new_lighting_mode){
   bg_mode = new_lighting_mode & LC_BG_MASK;

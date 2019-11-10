@@ -5,13 +5,18 @@ Make sure to update the MICI_CCV values if new lighting modes are added to light
 Otherwise the new modes will not work with the oMIDItone, since they are not explicitly allowed in the handle_cc() function
 */
 
+#define MIDI_DEBUG
+
 //these define the background lighting modes which correspond to the MIDI note values. They should be sent as the CC Value
 //make sure to update as lighting controller is updated with new modes
 #define MIDI_CCV_BG_TYPE_OFF 1
 #define MIDI_CCV_BG_TYPE_SOLID 2
 #define MIDI_CCV_BG_TYPE_SLOW_FADE 3
-#define MIDI_CCV_BG_TYPE_RAINBOW 4
-#define MIDI_CCV_BG_TYPE_RAINBOW_FIXED 5
+#define MIDI_CCV_BG_TYPE_RAINBOW_FIXED 4
+#define MIDI_CCV_BG_TYPE_RAINBOW_SLOW_ROTATE 5
+
+//this is used when an invalid code is sent:
+#define DEFAULT_BG MIDI_CCV_BG_TYPE_RAINBOW_SLOW_ROTATE
 
 //these define the foreground lighting modes which correspond to the MIDI note values. They should be sent as the CC Value
 //Note that the FG numbers will be bit shifted 8 bits over to comply with the lighting controller values. Verify that the numbers used correspond correctly.
@@ -22,6 +27,9 @@ Otherwise the new modes will not work with the oMIDItone, since they are not exp
 #define MIDI_CCV_FG_TYPE_MARQUEE_SLOW_FADE_FIXED 3
 #define MIDI_CCV_FG_TYPE_MARQUEE_SLOW_FADE 4
 #define MIDI_CCV_FG_TYPE_VU_METER 5
+
+//this is used when an invalid code is sent:
+#define DEFAULT_FG MIDI_CCV_FG_TYPE_NONE
 
 //These define which trigger to use when receiving a MICI_CC_OM#_TRIGGER command. They should be sent as the CC Value
 //make sure to update as lighting controller is updated with new modes
@@ -36,6 +44,9 @@ Otherwise the new modes will not work with the oMIDItone, since they are not exp
 #define MIDI_CCV_TR_TYPE_FLASH 8
 #define MIDI_CCV_TR_TYPE_FLASH_SLOW_FADE 9
 #define MIDI_CCV_TR_TYPE_FLASH_RAINBOW 10
+
+//this is used when an invalid code is sent:
+#define DEFAULT_TRIGGER MIDI_CCV_TR_TYPE_COLOR_PULSE
 
 //These define the MIDI control codes to change lighting and animation effects:
 
@@ -113,6 +124,170 @@ Otherwise the new modes will not work with the oMIDItone, since they are not exp
 #define MIDI_CC_OM5_NOTE_TR_CHANGE 118
 #define MIDI_CC_OM6_NOTE_TR_CHANGE 119
 
+//these check to make sure imputs are valid:
+//Head 1 Check:
+bool is_head_1(byte cc_number){
+  if(
+    cc_number == MIDI_CC_OM1_BG_RAINBOW     ||
+    cc_number == MIDI_CC_OM1_BG_CHANGE      ||
+    cc_number == MIDI_CC_OM1_FG_RAINBOW     ||
+    cc_number == MIDI_CC_OM1_FG_CHANGE      ||
+    cc_number == MIDI_CC_OM1_TR_RAINBOW     ||
+    cc_number == MIDI_CC_OM1_TRIGGER        ||
+    cc_number == MIDI_CC_OM1_NOTE_TR_CHANGE 
+  ){
+    return true;
+  }
+  else{
+    return false;
+  }
+}
+
+//Head 2 Check:
+bool is_head_2(byte cc_number){
+  if(
+    cc_number == MIDI_CC_OM2_BG_RAINBOW     ||
+    cc_number == MIDI_CC_OM2_BG_CHANGE      ||
+    cc_number == MIDI_CC_OM2_FG_RAINBOW     ||
+    cc_number == MIDI_CC_OM2_FG_CHANGE      ||
+    cc_number == MIDI_CC_OM2_TR_RAINBOW     ||
+    cc_number == MIDI_CC_OM2_TRIGGER        ||
+    cc_number == MIDI_CC_OM2_NOTE_TR_CHANGE 
+  ){
+    return true;
+  }
+  else{
+    return false;
+  }
+}
+
+//Head 3 Check:
+bool is_head_3(byte cc_number){
+  if(
+    cc_number == MIDI_CC_OM3_BG_RAINBOW     ||
+    cc_number == MIDI_CC_OM3_BG_CHANGE      ||
+    cc_number == MIDI_CC_OM3_FG_RAINBOW     ||
+    cc_number == MIDI_CC_OM3_FG_CHANGE      ||
+    cc_number == MIDI_CC_OM3_TR_RAINBOW     ||
+    cc_number == MIDI_CC_OM3_TRIGGER        ||
+    cc_number == MIDI_CC_OM3_NOTE_TR_CHANGE 
+  ){
+    return true;
+  }
+  else{
+    return false;
+  }
+}
+
+//Head 4 Check:
+bool is_head_4(byte cc_number){
+  if(
+    cc_number == MIDI_CC_OM4_BG_RAINBOW     ||
+    cc_number == MIDI_CC_OM4_BG_CHANGE      ||
+    cc_number == MIDI_CC_OM4_FG_RAINBOW     ||
+    cc_number == MIDI_CC_OM4_FG_CHANGE      ||
+    cc_number == MIDI_CC_OM4_TR_RAINBOW     ||
+    cc_number == MIDI_CC_OM4_TRIGGER        ||
+    cc_number == MIDI_CC_OM4_NOTE_TR_CHANGE 
+  ){
+    return true;
+  }
+  else{
+    return false;
+  }
+}
+
+//Head 5 Check:
+bool is_head_5(byte cc_number){
+  if(
+    cc_number == MIDI_CC_OM5_BG_RAINBOW     ||
+    cc_number == MIDI_CC_OM5_BG_CHANGE      ||
+    cc_number == MIDI_CC_OM5_FG_RAINBOW     ||
+    cc_number == MIDI_CC_OM5_FG_CHANGE      ||
+    cc_number == MIDI_CC_OM5_TR_RAINBOW     ||
+    cc_number == MIDI_CC_OM5_TRIGGER        ||
+    cc_number == MIDI_CC_OM5_NOTE_TR_CHANGE 
+  ){
+    return true;
+  }
+  else{
+    return false;
+  }
+}
+
+//Head 6 Check:
+bool is_head_6(byte cc_number){
+  if(
+    cc_number == MIDI_CC_OM6_BG_RAINBOW     ||
+    cc_number == MIDI_CC_OM6_BG_CHANGE      ||
+    cc_number == MIDI_CC_OM6_FG_RAINBOW     ||
+    cc_number == MIDI_CC_OM6_FG_CHANGE      ||
+    cc_number == MIDI_CC_OM6_TR_RAINBOW     ||
+    cc_number == MIDI_CC_OM6_TRIGGER        ||
+    cc_number == MIDI_CC_OM6_NOTE_TR_CHANGE 
+  ){
+    return true;
+  }
+  else{
+    return false;
+  }
+}
+
+//checks for valid bg animation modes
+bool is_valid_bg(byte cc_value){
+  if(
+    cc_value == MIDI_CCV_BG_TYPE_OFF ||
+    cc_value == MIDI_CCV_BG_TYPE_SOLID ||
+    cc_value == MIDI_CCV_BG_TYPE_SLOW_FADE ||
+    cc_value == MIDI_CCV_BG_TYPE_RAINBOW_FIXED ||
+    cc_value == MIDI_CCV_BG_TYPE_RAINBOW_SLOW_ROTATE
+  ){
+    return true;
+  }
+  else{
+    return false;
+  }
+}
+
+//checks for valid fg animation modes
+bool is_valid_fg(byte cc_value){
+  if(
+    cc_value == MIDI_CCV_FG_TYPE_NONE ||
+    cc_value == MIDI_CCV_FG_TYPE_MARQUEE_SOLID ||
+    cc_value == MIDI_CCV_FG_TYPE_MARQUEE_SOLID_FIXED ||
+    cc_value == MIDI_CCV_FG_TYPE_MARQUEE_SLOW_FADE ||
+    cc_value == MIDI_CCV_FG_TYPE_MARQUEE_SLOW_FADE_FIXED ||
+    cc_value == MIDI_CCV_FG_TYPE_VU_METER
+  ){
+    return true;
+  }
+  else{
+    return false;
+  }
+}
+
+//checks for valid trigger animation modes
+bool is_valid_trigger(byte cc_value){
+  if(
+    cc_value == MIDI_CCV_TR_TYPE_BG ||
+    cc_value == MIDI_CCV_TR_TYPE_FG ||
+    cc_value == MIDI_CCV_TR_TYPE_COLOR_PULSE ||
+    cc_value == MIDI_CCV_TR_TYPE_COLOR_PULSE_SLOW_FADE ||
+    cc_value == MIDI_CCV_TR_TYPE_COLOR_PULSE_RAINBOW ||
+    cc_value == MIDI_CCV_TR_TYPE_COLOR_SHOT ||
+    cc_value == MIDI_CCV_TR_TYPE_COLOR_SHOT_SLOW_FADE ||
+    cc_value == MIDI_CCV_TR_TYPE_COLOR_SHOT_RAINBOW ||
+    cc_value == MIDI_CCV_TR_TYPE_FLASH ||
+    cc_value == MIDI_CCV_TR_TYPE_FLASH_SLOW_FADE ||
+    cc_value == MIDI_CCV_TR_TYPE_FLASH_RAINBOW
+  ){
+    return true;
+  }
+  else{
+    return false;
+  }
+}
+
 //This will read the hardware MIDI and set or remove notes as needed.
 void read_hardware_MIDI(){
   int type, note, velocity, channel, p1, p2, d1, d2, control_number, control_value;
@@ -127,7 +302,7 @@ void read_hardware_MIDI(){
           //Set the note on as usual:
           add_note(note, velocity, channel);
           note_has_changed = true;
-          #ifdef DEBUG
+          #ifdef MIDI_DEBUG
             print_current_note_array();
           #endif
         } 
@@ -135,7 +310,7 @@ void read_hardware_MIDI(){
           //Set the note off.
           remove_note(note);
           note_has_changed = true;
-        #ifdef DEBUG
+        #ifdef MIDI_DEBUG
           print_current_note_array();
         #endif
         }
@@ -147,7 +322,7 @@ void read_hardware_MIDI(){
         //Set the note off as usual.
         remove_note(note);
         note_has_changed = true;
-        #ifdef DEBUG
+        #ifdef MIDI_DEBUG
           print_current_note_array();
         #endif
         break;
@@ -157,7 +332,7 @@ void read_hardware_MIDI(){
         //shift the bits so it's a single number from -8192 to 8192.
         current_pitch_shift[channel] = (p2<<7) + p1 - 8192;
         pitch_has_changed = true;
-        #ifdef DEBUG
+        #ifdef MIDI_DEBUG
           Serial.print("Pitch Shift set to ");
           Serial.print(current_pitch_shift[channel]);
           Serial.print(" on channel ");
@@ -188,7 +363,7 @@ void OnNoteOn(byte channel, byte note, byte velocity){
     remove_note(note);
   }
   note_has_changed = true;
-  #ifdef DEBUG
+  #ifdef MIDI_DEBUG
     print_current_note_array();
   #endif
 }
@@ -197,7 +372,7 @@ void OnNoteOn(byte channel, byte note, byte velocity){
 void OnNoteOff(byte channel, byte note, byte velocity){
   remove_note(note);
   note_has_changed = true;
-  #ifdef DEBUG
+  #ifdef MIDI_DEBUG
     print_current_note_array();
   #endif
 }
@@ -206,7 +381,7 @@ void OnNoteOff(byte channel, byte note, byte velocity){
 void OnPitchChange(byte channel, int pitch){
   current_pitch_shift[channel] = pitch;
   pitch_has_changed = true;
-  #ifdef DEBUG
+  #ifdef MIDI_DEBUG
     Serial.print("Pitch Shift set to ");
     Serial.print(current_pitch_shift[channel]);
     Serial.print(" on channel ");
@@ -229,14 +404,14 @@ void handle_cc(byte channel, byte cc_number, byte cc_value){
     //enable for any value other than 0
     if(cc_value){
       note_trigger_is_enabled = true;
-      #ifdef DEBUG
+      #ifdef MIDI_DEBUG
         Serial.println("Trigger events occur on note_on messages.");
       #endif
       return;
     }
     else{
       note_trigger_is_enabled = false;
-      #ifdef DEBUG
+      #ifdef MIDI_DEBUG
         Serial.println("Trigger events no longer occur on note_on messages.");
       #endif
       return;
@@ -247,14 +422,14 @@ void handle_cc(byte channel, byte cc_number, byte cc_value){
     //enable for any value other than 0
     if(cc_value){
       lighting_is_enabled = true;
-      #ifdef DEBUG
+      #ifdef MIDI_DEBUG
         Serial.println("Lighting updates are enabled.");
       #endif
       return;
     }
     else{
       lighting_is_enabled = false;
-      #ifdef DEBUG
+      #ifdef MIDI_DEBUG
         Serial.println("Light updates are disabled.");
       #endif
       return;
@@ -262,7 +437,7 @@ void handle_cc(byte channel, byte cc_number, byte cc_value){
   }
   //this forces a software reset of the teensy board
   else if(cc_number == MIDI_CC_RESET_ALL_CONTROLLERS){
-    #ifdef DEBUG
+    #ifdef MIDI_DEBUG
       Serial.print("Manual Reset of board triggered. Shutting down...");
       delay(500);
     #endif
@@ -270,86 +445,46 @@ void handle_cc(byte channel, byte cc_number, byte cc_value){
   }
 
   //some cc_numbers are head specific, so this variable sets the head properly if it's one of those.
-  uint8_t head;
+  uint8_t head = 0;
   //head 1 specific CC messages
-  if(
-    cc_number == MIDI_CC_OM1_BG_RAINBOW     ||
-    cc_number == MIDI_CC_OM1_BG_CHANGE      ||
-    cc_number == MIDI_CC_OM1_FG_RAINBOW     ||
-    cc_number == MIDI_CC_OM1_FG_CHANGE      ||
-    cc_number == MIDI_CC_OM1_TR_RAINBOW     ||
-    cc_number == MIDI_CC_OM1_TRIGGER        ||
-    cc_number == MIDI_CC_OM1_NOTE_TR_CHANGE ){
+  if(is_head_1(cc_number)){
     head = 0;
   }
   //head 2 specific CC messages
-  else if(
-    cc_number == MIDI_CC_OM2_BG_RAINBOW     ||
-    cc_number == MIDI_CC_OM2_BG_CHANGE      ||
-    cc_number == MIDI_CC_OM2_FG_RAINBOW     ||
-    cc_number == MIDI_CC_OM2_FG_CHANGE      ||
-    cc_number == MIDI_CC_OM2_TR_RAINBOW     ||
-    cc_number == MIDI_CC_OM2_TRIGGER        ||
-    cc_number == MIDI_CC_OM2_NOTE_TR_CHANGE ){
+  else if(is_head_2(cc_number)){
     head = 1;
   }
   //head 3 specific CC messages
-  else if(
-    cc_number == MIDI_CC_OM3_BG_RAINBOW     ||
-    cc_number == MIDI_CC_OM3_BG_CHANGE      ||
-    cc_number == MIDI_CC_OM3_FG_RAINBOW     ||
-    cc_number == MIDI_CC_OM3_FG_CHANGE      ||
-    cc_number == MIDI_CC_OM3_TR_RAINBOW     ||
-    cc_number == MIDI_CC_OM3_TRIGGER        ||
-    cc_number == MIDI_CC_OM3_NOTE_TR_CHANGE ){
+  else if(is_head_3(cc_number)){
     head = 2;
   }
   //head 4 specific CC messages
-  else if(
-    cc_number == MIDI_CC_OM4_BG_RAINBOW     ||
-    cc_number == MIDI_CC_OM4_BG_CHANGE      ||
-    cc_number == MIDI_CC_OM4_FG_RAINBOW     ||
-    cc_number == MIDI_CC_OM4_FG_CHANGE      ||
-    cc_number == MIDI_CC_OM4_TR_RAINBOW     ||
-    cc_number == MIDI_CC_OM4_TRIGGER        ||
-    cc_number == MIDI_CC_OM4_NOTE_TR_CHANGE ){
+  else if(is_head_4(cc_number)){
     head = 3;
   }
   //head 5 specific CC messages
-  else if(
-    cc_number == MIDI_CC_OM5_BG_RAINBOW     ||
-    cc_number == MIDI_CC_OM5_BG_CHANGE      ||
-    cc_number == MIDI_CC_OM5_FG_RAINBOW     ||
-    cc_number == MIDI_CC_OM5_FG_CHANGE      ||
-    cc_number == MIDI_CC_OM5_TR_RAINBOW     ||
-    cc_number == MIDI_CC_OM5_TRIGGER        ||
-    cc_number == MIDI_CC_OM5_NOTE_TR_CHANGE ){
+  else if(is_head_5(cc_number)){
     head = 4;
   }
   //head 6 specific CC messages
-  else if(
-    cc_number == MIDI_CC_OM6_BG_RAINBOW     ||
-    cc_number == MIDI_CC_OM6_BG_CHANGE      ||
-    cc_number == MIDI_CC_OM6_FG_RAINBOW     ||
-    cc_number == MIDI_CC_OM6_FG_CHANGE      ||
-    cc_number == MIDI_CC_OM6_TR_RAINBOW     ||
-    cc_number == MIDI_CC_OM6_TRIGGER        ||
-    cc_number == MIDI_CC_OM6_NOTE_TR_CHANGE ){
+  else if(is_head_6(cc_number)){
     head = 5;
   }
 
   //Head specific statements:
 
   //Set the background rainbow
-  if( cc_number == MIDI_CC_OM1_BG_RAINBOW ||
+  if( 
+      cc_number == MIDI_CC_OM1_BG_RAINBOW ||
       cc_number == MIDI_CC_OM2_BG_RAINBOW ||
       cc_number == MIDI_CC_OM3_BG_RAINBOW ||
       cc_number == MIDI_CC_OM4_BG_RAINBOW ||
       cc_number == MIDI_CC_OM5_BG_RAINBOW ||
-      cc_number == MIDI_CC_OM6_BG_RAINBOW ){
+      cc_number == MIDI_CC_OM6_BG_RAINBOW 
+    ){
     if(cc_value < num_bg_rainbows){
       oms[head].animation->change_rainbow(LC_BG, bg_array[cc_value]);
-      #ifdef DEBUG
+      #ifdef MIDI_DEBUG
         Serial.print("Head ");
         Serial.print(head+1);
         Serial.print(": Background rainbow changed to ");
@@ -360,7 +495,7 @@ void handle_cc(byte channel, byte cc_number, byte cc_value){
     else{
       //set to the largest value if the received CC message has more rainbows than the bg_array
       oms[head].animation->change_rainbow(LC_BG, bg_array[num_bg_rainbows-1]);
-      #ifdef DEBUG
+      #ifdef MIDI_DEBUG
         Serial.print("Head ");
         Serial.print(head+1);
         Serial.print(": Background rainbow changed to ");
@@ -370,15 +505,17 @@ void handle_cc(byte channel, byte cc_number, byte cc_value){
     }
   }
   //Set the foreground rainbow
-  else if(cc_number == MIDI_CC_OM1_FG_RAINBOW ||
+  else if(
+          cc_number == MIDI_CC_OM1_FG_RAINBOW ||
           cc_number == MIDI_CC_OM2_FG_RAINBOW ||
           cc_number == MIDI_CC_OM3_FG_RAINBOW ||
           cc_number == MIDI_CC_OM4_FG_RAINBOW ||
           cc_number == MIDI_CC_OM5_FG_RAINBOW ||
-          cc_number == MIDI_CC_OM6_FG_RAINBOW ){
+          cc_number == MIDI_CC_OM6_FG_RAINBOW 
+         ){
     if(cc_value < num_fg_rainbows){
       oms[head].animation->change_rainbow(LC_FG, fg_array[cc_value]);
-      #ifdef DEBUG
+      #ifdef MIDI_DEBUG
         Serial.print("Head ");
         Serial.print(head+1);
         Serial.print(": Foreground rainbow changed to ");
@@ -389,7 +526,7 @@ void handle_cc(byte channel, byte cc_number, byte cc_value){
     else{
       //set to the largest value if the received CC message has more rainbows than the bg_array
       oms[head].animation->change_rainbow(LC_FG, fg_array[num_fg_rainbows-1]);
-      #ifdef DEBUG
+      #ifdef MIDI_DEBUG
         Serial.print("Head ");
         Serial.print(head+1);
         Serial.print(": Foreground rainbow changed to ");
@@ -399,15 +536,17 @@ void handle_cc(byte channel, byte cc_number, byte cc_value){
     }
   }
   //set the trigger rainbow
-  else if(cc_number == MIDI_CC_OM1_TR_RAINBOW ||
+  else if(
+          cc_number == MIDI_CC_OM1_TR_RAINBOW ||
           cc_number == MIDI_CC_OM2_TR_RAINBOW ||
           cc_number == MIDI_CC_OM3_TR_RAINBOW ||
           cc_number == MIDI_CC_OM4_TR_RAINBOW ||
           cc_number == MIDI_CC_OM5_TR_RAINBOW ||
-          cc_number == MIDI_CC_OM6_TR_RAINBOW ){
+          cc_number == MIDI_CC_OM6_TR_RAINBOW 
+         ){
     if(cc_value < num_fg_rainbows){
       oms[head].animation->change_rainbow(LC_TRIGGER, trigger_array[cc_value]);
-      #ifdef DEBUG
+      #ifdef MIDI_DEBUG
         Serial.print("Head ");
         Serial.print(head+1);
         Serial.print(": Trigger rainbow changed to ");
@@ -418,7 +557,7 @@ void handle_cc(byte channel, byte cc_number, byte cc_value){
     else{
       //set to the largest value if the received CC message has more rainbows than the bg_array
       oms[head].animation->change_rainbow(LC_TRIGGER, trigger_array[num_trigger_rainbows-1]);
-      #ifdef DEBUG
+      #ifdef MIDI_DEBUG
         Serial.print("Head ");
         Serial.print(head+1);
         Serial.print(": Trigger rainbow changed to ");
@@ -428,65 +567,113 @@ void handle_cc(byte channel, byte cc_number, byte cc_value){
     }
   }
   //change the background animation type
-  else if(cc_number == MIDI_CC_OM1_BG_CHANGE ||
+  else if(
+          cc_number == MIDI_CC_OM1_BG_CHANGE ||
           cc_number == MIDI_CC_OM2_BG_CHANGE ||
           cc_number == MIDI_CC_OM3_BG_CHANGE ||
           cc_number == MIDI_CC_OM4_BG_CHANGE ||
           cc_number == MIDI_CC_OM5_BG_CHANGE ||
-          cc_number == MIDI_CC_OM6_BG_CHANGE ){
-    //TIM: add check to make sure it's valid, as well as a default.
-    oms[head].animation->change_lighting_mode(cc_value);
-    #ifdef DEBUG
-        Serial.print("Head ");
-        Serial.print(head+1);
-      Serial.print(": Foreground lighting mode has changed to ");
-      Serial.println(cc_value, HEX);
-    #endif
-    return;
+          cc_number == MIDI_CC_OM6_BG_CHANGE 
+         ){
+    //this checks to make sure that a valid lighting mode is used, otherwise the default is selected:
+    if(is_valid_bg(cc_value)){
+      //the next line is bitwise or-ed with the current bg animation to make sure not to override it.
+      oms[head].animation->change_lighting_mode(cc_value | oms[head].animation->current_fg_mode());
+      #ifdef MIDI_DEBUG
+          Serial.print("Head ");
+          Serial.print(head+1);
+        Serial.print(": Background lighting mode has changed to ");
+        Serial.println(cc_value, HEX);
+      #endif
+      return;
+    }
+    else{
+      //the next line is bitwise or-ed with the current bg animation to make sure not to override it.
+      oms[head].animation->change_lighting_mode(DEFAULT_BG | oms[head].animation->current_fg_mode());
+      #ifdef MIDI_DEBUG
+          Serial.print("Head ");
+          Serial.print(head+1);
+        Serial.print(": Background lighting mode has changed to ");
+        Serial.println(DEFAULT_BG, HEX);
+      #endif
+      return;
+    }
   }
   //change the foreground animation type
-  else if(cc_number == MIDI_CC_OM1_FG_CHANGE ||
+  else if(
+          cc_number == MIDI_CC_OM1_FG_CHANGE ||
           cc_number == MIDI_CC_OM2_FG_CHANGE ||
           cc_number == MIDI_CC_OM3_FG_CHANGE ||
           cc_number == MIDI_CC_OM4_FG_CHANGE ||
           cc_number == MIDI_CC_OM5_FG_CHANGE ||
-          cc_number == MIDI_CC_OM6_FG_CHANGE ){
-    //TIM: add check to make sure it's valid, as well as a default.
-    oms[head].animation->change_lighting_mode(cc_value<<8); //bit shifted because of how the lighting mode definitions work. See lighting_control.h
-    #ifdef DEBUG
-        Serial.print("Head ");
-        Serial.print(head+1);
-      Serial.print(": Foreground lighting mode has changed to ");
-      Serial.println(cc_value, HEX);
-    #endif
-    return;
+          cc_number == MIDI_CC_OM6_FG_CHANGE 
+         ){
+    //this checks to make sure that a valid lighting mode is used, otherwise the default is selected:
+    if(is_valid_fg(cc_value)){
+      //the next line is bitwise or-ed with the current bg animation to make sure not to override it.
+      oms[head].animation->change_lighting_mode(cc_value<<8 | oms[head].animation->current_bg_mode()); //bit shifted because of how the lighting mode definitions work. See lighting_control.h
+      #ifdef MIDI_DEBUG
+          Serial.print("Head ");
+          Serial.print(head+1);
+        Serial.print(": Foreground lighting mode has changed to ");
+        Serial.println(cc_value, HEX);
+      #endif
+      return;
+    }
+    else{
+      //the next line is bitwise or-ed with the current bg animation to make sure not to override it.
+      oms[head].animation->change_lighting_mode(DEFAULT_FG<<8 | oms[head].animation->current_bg_mode()); //bit shifted because of how the lighting mode definitions work. See lighting_control.h
+      #ifdef MIDI_DEBUG
+          Serial.print("Head ");
+          Serial.print(head+1);
+        Serial.print(": Foreground lighting mode has changed to ");
+        Serial.println(DEFAULT_FG, HEX);
+      #endif
+      return;
+    }
   }
   //fire off a trigger animation, regardless of the note trigger status
-  else if(cc_number == MIDI_CC_OM1_TRIGGER ||
+  else if(
+          cc_number == MIDI_CC_OM1_TRIGGER ||
           cc_number == MIDI_CC_OM2_TRIGGER ||
           cc_number == MIDI_CC_OM3_TRIGGER ||
           cc_number == MIDI_CC_OM4_TRIGGER ||
           cc_number == MIDI_CC_OM5_TRIGGER ||
-          cc_number == MIDI_CC_OM6_TRIGGER ){
-    //TIM: add check to make sure it's valid, as well as a default.
-    #ifdef DEBUG
-      Serial.print("Head ");
-      Serial.print(head+1);
-      Serial.print(": An event has been triggered of type ");
-      Serial.println(cc_value, HEX);
-    #endif
-    return;
+          cc_number == MIDI_CC_OM6_TRIGGER 
+         ){
+    if(is_valid_trigger(cc_value)){
+      oms[head].animation->trigger_event(cc_value);
+      #ifdef MIDI_DEBUG
+        Serial.print("Head ");
+        Serial.print(head+1);
+        Serial.print(": An event has been triggered of type ");
+        Serial.println(cc_value, HEX);
+      #endif
+      return;
+    }
+    else{
+      oms[head].animation->trigger_event(DEFAULT_TRIGGER);
+      #ifdef MIDI_DEBUG
+        Serial.print("Head ");
+        Serial.print(head+1);
+        Serial.print(": An event has been triggered of type ");
+        Serial.println(DEFAULT_TRIGGER, HEX);
+      #endif
+      return;
+    }
   }
   //change the type of animation to use for note triggered animations - varies per head
-  else if(cc_number == MIDI_CC_OM1_NOTE_TR_CHANGE ||
+  else if(
+          cc_number == MIDI_CC_OM1_NOTE_TR_CHANGE ||
           cc_number == MIDI_CC_OM2_NOTE_TR_CHANGE ||
           cc_number == MIDI_CC_OM3_NOTE_TR_CHANGE ||
           cc_number == MIDI_CC_OM4_NOTE_TR_CHANGE ||
           cc_number == MIDI_CC_OM5_NOTE_TR_CHANGE ||
-          cc_number == MIDI_CC_OM6_NOTE_TR_CHANGE ){
+          cc_number == MIDI_CC_OM6_NOTE_TR_CHANGE 
+         ){
     //TIM: add check to make sure it's valid, as well as a default.
     note_trigger_type[head] = cc_value;
-    #ifdef DEBUG
+    #ifdef MIDI_DEBUG
       Serial.print("Head ");
       Serial.print(head+1);
       Serial.print(": Note Trigger mode has changed to ");
@@ -503,7 +690,7 @@ void handle_cc(byte channel, byte cc_number, byte cc_value){
       oms[h].note_off(oms[h].currently_playing_note());
       //only return on the last head
       if(h == (NUM_OMIDITONES-1)){
-        #ifdef DEBUG
+        #ifdef MIDI_DEBUG
           Serial.println("All notes off CC message received.");
         #endif
         return;
@@ -516,7 +703,7 @@ void handle_cc(byte channel, byte cc_number, byte cc_value){
         oms[h].enable_servos();
         //only return on the last head
         if(h == (NUM_OMIDITONES-1)){
-          #ifdef DEBUG
+          #ifdef MIDI_DEBUG
             Serial.println("Servos have been enabled.");
           #endif
           return;
@@ -526,7 +713,7 @@ void handle_cc(byte channel, byte cc_number, byte cc_value){
         oms[h].disable_servos();
         //only return on the last head
         if(h == (NUM_OMIDITONES-1)){
-          #ifdef DEBUG
+          #ifdef MIDI_DEBUG
             Serial.println("Servos been disabled.");
           #endif
           return;
@@ -539,7 +726,7 @@ void handle_cc(byte channel, byte cc_number, byte cc_value){
       if(cc_value){
         oms[h].enable_pitch_correction();
         if(h == (NUM_OMIDITONES-1)){
-          #ifdef DEBUG
+          #ifdef MIDI_DEBUG
             Serial.println("Pitch Correction has been enabled.");
           #endif
           return;
@@ -548,7 +735,7 @@ void handle_cc(byte channel, byte cc_number, byte cc_value){
       else{
         oms[h].disable_pitch_correction();
         if(h == (NUM_OMIDITONES-1)){
-          #ifdef DEBUG
+          #ifdef MIDI_DEBUG
             Serial.println("Pitch Correction has been disabled.");
           #endif
           return;
@@ -557,7 +744,7 @@ void handle_cc(byte channel, byte cc_number, byte cc_value){
     }
   }// head for loop
   //if it makes it here without returning, note that nothing happened.
-  #ifdef DEBUG
+  #ifdef MIDI_DEBUG
     Serial.print("CC ");
     Serial.print(cc_number);
     Serial.println(" is unassigned. No action taken.");

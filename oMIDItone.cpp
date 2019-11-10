@@ -642,6 +642,7 @@ void oMIDItone::enable_servos(){
   servo_is_enabled = true;
 }
 void oMIDItone::disable_servos(){
+  //disable the servos in the open position:
   servo_is_enabled = false;
 }
 

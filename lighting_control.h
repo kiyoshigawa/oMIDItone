@@ -275,6 +275,10 @@ class Animation{
     //this will change the animation's offsets. This can be used for manual movement of any offsettable animation, such as the LC_BG_RAINBOW_FIXED, or LC_FG_MARQUEE_SOLID_FIXED
     //the type can be LC_BG, LC_FG, or LC_TRIGGER, to set which offset to change.
     void change_offset(uint8_t type, int32_t new_offset, int32_t alternate_max_value = LC_MAX_OFFSET);
+
+    //these return the current fg and bg animation modes:
+    uint16_t current_bg_mode();
+    uint16_t current_fg_mode();
     
     //this stores the leds the animation works on, in sequential order. 
     //The values in this array are the position of the Adafruit_NeoPixel strip object, in the order to animate on.
