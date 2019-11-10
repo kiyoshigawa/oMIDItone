@@ -241,6 +241,16 @@ void Animation::trigger_event(uint16_t trigger_type){
     //make a new color shot of the current trigger_rainbow color and add it to the current_trigger_events array and increment the trigger_rainbow color.
     increment_trigger_rainbow();
   }
+  else if(trigger_type == LC_TRIGGER_FLASH){
+    //make a new solid color flash the current trigger rainbow color and add it to the current_trigger_events array.
+  }
+  else if(trigger_type == LC_TRIGGER_FLASH_SLOW_FADE){
+    //make a new flash of the offset current trigger_rainbow color based on current_frame and add it to the current_trigger_events array.
+  }
+  else if(trigger_type == LC_TRIGGER_FLASH_RAINBOW){
+    //make a new flash of the current trigger_rainbow color and add it to the current_trigger_events array and increment the trigger_rainbow color.
+    increment_trigger_rainbow();
+  }
 }
 
 //this will update the trigger animations in the current_trigger_events array and render the effected LEDs.
@@ -291,6 +301,15 @@ void Animation::update_trigger_animations(){
         //do something
       }
       else if(current_trigger_events[i].type == LC_TRIGGER_COLOR_SHOT_RAINBOW){
+        //do something
+      }
+      else if(current_trigger_events[i].type == LC_TRIGGER_FLASH){
+        //do something
+      }
+      else if(current_trigger_events[i].type == LC_TRIGGER_FLASH_SLOW_FADE){
+        //do something
+      }
+      else if(current_trigger_events[i].type == LC_TRIGGER_FLASH_RAINBOW){
         //do something
       }
     }
@@ -766,7 +785,7 @@ void LightingControl::init(){
 }
 
 //This needs to be called regularly to update all the animations on the lighting controller
-void LightingControl::update(){
+int LightingControl::update(){
   if(last_update > LC_DEFAULT_REFRESH_RATE){
     //this will iterate through any active Animation objects and update the LEDs under the Animation object's control
     for(int i=0; i<num_current_animations; i++){
@@ -781,7 +800,9 @@ void LightingControl::update(){
     strip->show();
     //reset the last_update
     last_update = 0;
+    return LC_STRIP_WRITTEN;
   }
+  return LC_STRIP_NOT_WRITTEN;
 }
 
 //this will add an animaton to the lighting controller so the update function will know which animations to run.

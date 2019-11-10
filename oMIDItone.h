@@ -51,6 +51,12 @@ lighting modes and servo animation modes, as well as for direct control if I wan
   #define OMIDITONE_DEBUG
 #endif
 
+//this controls default state of frequency correction
+#define FREQUENCY_CORRECTION_DEFAULT_ENABLE_STATE true
+
+//this controls default state of servos
+#define SERVO_DEFAULT_ENABLE_STATE true
+
 //number of oMIDItones on this controller - Update as needed.
 #define NUM_OMIDITONES 6
 
@@ -79,7 +85,7 @@ lighting modes and servo animation modes, as well as for direct control if I wan
 #define RISING_EDGE_THRESHOLD 20
 
 //this is the % difference that a note can be off to trigger correction, as a number from 0-100
-#define ALLOWABLE_NOTE_ERROR 2
+#define ALLOWABLE_NOTE_ERROR 1
 
 //this is to make sure that the rising edge isn't measured too often (in us):
 #define MIN_TIME_BETWEEN_RISING_EDGE_MEASUREMENTS 1
@@ -172,6 +178,17 @@ class oMIDItone {
     //this will set the pitch shift value. This will apply to any notes played on the oMIDItone.
     void set_pitch_shift(int16_t pitch_shift_value, uint16_t pitch_shift_channel);
 
+    //these enable and disable frequency correction:
+    void enable_pitch_correction();
+    void disable_pitch_correction();
+
+    //these enable and disable servos:
+    void enable_servos();
+    void disable_servos();
+
+    //this will cancel the current pitch correction testing if anything disruptive happens during the testing to avoid incorrect corrections
+    void reset_pitch_correction();
+
     //this stores the order of the led positions on the lighting controller that correspond to the oMIDItone head.
     uint16_t * led_position_array;
 
@@ -221,6 +238,12 @@ class oMIDItone {
 
     //This is a variable that tells the program when to check for a note value when the note is on.
     bool check_note_value;
+
+    //this is a variable that controls whether or not frequency correction is enabled:
+    bool pitch_correction_is_enabled;
+
+    //this is a variable that controls whether or not servos are enabled
+    bool servo_is_enabled;
 
     //current_note is the number of the MIDI note value that is being played.
     uint16_t current_note;
@@ -307,6 +330,9 @@ class oMIDItone {
 
     //This tracks when the previous servo update ran on this head
     elapsedMillis last_servo_update;
+
+    //this is used to cancel a pitch correction if an event occurs that would disturb the timing
+    bool pitch_correction_has_been_compromised;
 };
 
 #endif

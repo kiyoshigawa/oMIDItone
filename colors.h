@@ -230,4 +230,111 @@ const rainbow PROGMEM r11 = {
   },
   .num_colors = 8
 };
+
+const rainbow om1_rb = {
+  .colors = {
+    red, 
+    Color(64,0,0), 
+    red, 
+    Color(64,0,0),
+    red, 
+    Color(64,0,0),
+    red, 
+    Color(64,0,0),
+    red 
+  },
+  .num_colors = 9
+};
+
+const rainbow om2_rb = {
+  .colors = {
+    yellow, 
+    Color(64,64,0),
+    yellow, 
+    Color(64,64,0),
+    yellow,
+    Color(64,64,0),
+    yellow,
+    Color(64,64,0),
+    yellow 
+  },
+  .num_colors = 9
+};
+
+const rainbow om3_rb = {
+  .colors = {
+    sky_blue, 
+    Color(0,64,64),
+    sky_blue, 
+    Color(0,64,64),
+    sky_blue, 
+    Color(0,64,64),
+    sky_blue, 
+    Color(0,64,64),
+    sky_blue 
+  },
+  .num_colors = 9
+};
+
+const rainbow om4_rb = {
+  .colors = {
+    purple, 
+    Color(64,0,64),
+    purple, 
+    Color(64,0,64),
+    purple, 
+    Color(64,0,64),
+    purple, 
+    Color(64,0,64),
+    purple 
+  },
+  .num_colors = 9
+};
+
+const rainbow om5_rb = {
+  .colors = {
+    green, 
+    Color(0,64,0),
+    green, 
+    Color(0,64,0),
+    green, 
+    Color(0,64,0),
+    green, 
+    Color(0,64,0),
+    green 
+  },
+  .num_colors = 9
+};
+
+const rainbow om6_rb = {
+  .colors = {
+    blue, 
+    Color(0,0,64),
+    blue, 
+    Color(0,0,64),
+    blue, 
+    Color(0,0,64),
+    blue, 
+    Color(0,0,64),
+    blue 
+  },
+  .num_colors = 9
+};
+
+const rainbow marquee_rb = {
+  .colors = {
+    Color(255,255,255),
+    Color(64,64,64)
+  },
+  .num_colors = 2
+};
+
+const rainbow trigger_rb = {
+  .colors = {
+    Color(255,255,255),
+    Color(64,64,64)
+  },
+  .num_colors = 2
+};
+
 #endif

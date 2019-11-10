@@ -127,6 +127,20 @@ To summarize:
 //shots need to be externally triggered.
 #define LC_TRIGGER_COLOR_SHOT_RAINBOW 7
 
+//this will flash all the LEDs for the head a single color for a short time.
+//needs to be externallt triggered
+#define LC_TRIGGER_FLASH 8
+
+//this will flash all the LEDs for the head a single color for a short time.
+//color offset can be changed externally, or set to a constant rate
+//needs to be externallt triggered
+#define LC_TRIGGER_FLASH_SLOW_FADE 9
+
+//this will flash all the LEDs for the head a single color for a short time.
+//Each flash will be a new color in the order of the rainbow.
+//needs to be externallt triggered
+#define LC_TRIGGER_FLASH_RAINBOW 10
+
 //this is the most animations that can be run at one time by the LightingControl object
 #define MAX_ANIMATIONS 20
 
@@ -150,6 +164,9 @@ To summarize:
 #define LC_BG 1
 #define LC_FG 2
 #define LC_TRIGGER 3
+
+#define LC_STRIP_NOT_WRITTEN 0
+#define LC_STRIP_WRITTEN 1
 
 //some default values for various animation modes:
 
@@ -388,7 +405,7 @@ class LightingControl{
     void init();
 
     //call this in your main program loop to keep all animations running. Animations will not run without this
-    void update();
+    int update();
 
     //this adds an animation to the controller, which will then be updated with all the lighting effects on the LightingControl object
     void add_animation(Animation * new_animation);

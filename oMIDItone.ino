@@ -15,6 +15,7 @@ Update: 2019-09-26: This is now configured (at least initially) for the fully fu
 #include <MIDI.h>
 #include <Adafruit_NeoPixel.h>
 #include "lighting_control.h"
+#include "MIDI_CC.h"
 
 //comment this to disable serial functions for testing notes.
 #define DEBUG
@@ -117,116 +118,26 @@ uint16_t om6_l_channel = 14;
 uint16_t om6_r_channel = 15;
 uint16_t om6_leds[NUM_LEDS_PER_HEAD] = {35, 34, 33, 32, 31, 30, 71, 70, 69, 68, 67, 66, 36, 37, 38, 39, 40, 41};
 
-rainbow om1_rb = {
-  .colors = {
-    red, 
-    Color(64,0,0), 
-    red, 
-    Color(64,0,0),
-    red, 
-    Color(64,0,0),
-    red, 
-    Color(64,0,0),
-    red 
-  },
-  .num_colors = 9
-};
+//these are arrays of rainbow structures for use in MIDI color selection:
+const uint16_t num_bg_rainbows = 6;
+const rainbow bg_array[num_bg_rainbows] = {om1_rb, om2_rb, om3_rb, om4_rb, om5_rb, om6_rb};
+const uint16_t num_fg_rainbows = 6;
+const rainbow fg_array[num_fg_rainbows] = {marquee_rb, marquee_rb, marquee_rb, marquee_rb, marquee_rb, marquee_rb};
+const uint16_t num_trigger_rainbows = 6;
+const rainbow trigger_array[num_trigger_rainbows] = {trigger_rb, trigger_rb, trigger_rb, trigger_rb, trigger_rb, trigger_rb};
 
-rainbow om2_rb = {
-  .colors = {
-    yellow, 
-    Color(64,64,0),
-    yellow, 
-    Color(64,64,0),
-    yellow,
-    Color(64,64,0),
-    yellow,
-    Color(64,64,0),
-    yellow 
-  },
-  .num_colors = 9
-};
-
-rainbow om3_rb = {
-  .colors = {
-    sky_blue, 
-    Color(0,64,64),
-    sky_blue, 
-    Color(0,64,64),
-    sky_blue, 
-    Color(0,64,64),
-    sky_blue, 
-    Color(0,64,64),
-    sky_blue 
-  },
-  .num_colors = 9
-};
-
-rainbow om4_rb = {
-  .colors = {
-    purple, 
-    Color(64,0,64),
-    purple, 
-    Color(64,0,64),
-    purple, 
-    Color(64,0,64),
-    purple, 
-    Color(64,0,64),
-    purple 
-  },
-  .num_colors = 9
-};
-
-rainbow om5_rb = {
-  .colors = {
-    green, 
-    Color(0,64,0),
-    green, 
-    Color(0,64,0),
-    green, 
-    Color(0,64,0),
-    green, 
-    Color(0,64,0),
-    green 
-  },
-  .num_colors = 9
-};
-
-rainbow om6_rb = {
-  .colors = {
-    blue, 
-    Color(0,0,64),
-    blue, 
-    Color(0,0,64),
-    blue, 
-    Color(0,0,64),
-    blue, 
-    Color(0,0,64),
-    blue 
-  },
-  .num_colors = 9
-};
-
-rainbow marquee_rb = {
-  .colors = {
-    Color(255,255,255),
-    Color(64,64,64)
-  },
-  .num_colors = 2
-};
-
-rainbow trigger_rb = {
-  .colors = {
-    Color(255,255,255),
-    Color(64,64,64)
-  },
-  .num_colors = 2
-};
+//this array controls the type of notes being sent to each head on note_trigger events when they are active:
+uint16_t note_trigger_type[NUM_OMIDITONES] = {LC_TRIGGER_COLOR_PULSE_SLOW_FADE, 
+                                              LC_TRIGGER_COLOR_PULSE_SLOW_FADE, 
+                                              LC_TRIGGER_COLOR_PULSE_SLOW_FADE, 
+                                              LC_TRIGGER_COLOR_PULSE_SLOW_FADE, 
+                                              LC_TRIGGER_COLOR_PULSE_SLOW_FADE, 
+                                              LC_TRIGGER_COLOR_PULSE_SLOW_FADE};
 
 //these are the Animation objects for the heads above - they will control the animation per-head.
-Animation om1_animation = Animation(om1_leds, NUM_LEDS_PER_HEAD, (LC_BG_RAINBOW_SLOW_ROTATE | LC_FG_MARQUEE_SLOW_FADE), om1_rb, marquee_rb, trigger_rb, LC_DEFAULT_REFRESH_RATE);
+Animation om1_animation = Animation(om1_leds, NUM_LEDS_PER_HEAD, (LC_BG_RAINBOW_SLOW_ROTATE), om1_rb, marquee_rb, trigger_rb, LC_DEFAULT_REFRESH_RATE);
 Animation om2_animation = Animation(om2_leds, NUM_LEDS_PER_HEAD, (LC_BG_RAINBOW_SLOW_ROTATE), om2_rb, marquee_rb, trigger_rb, LC_DEFAULT_REFRESH_RATE);
-Animation om3_animation = Animation(om3_leds, NUM_LEDS_PER_HEAD, (LC_BG_RAINBOW_SLOW_ROTATE | LC_FG_VU_METER), om3_rb, r_vu, trigger_rb, LC_DEFAULT_REFRESH_RATE);
+Animation om3_animation = Animation(om3_leds, NUM_LEDS_PER_HEAD, (LC_BG_RAINBOW_SLOW_ROTATE), om3_rb, marquee_rb, trigger_rb, LC_DEFAULT_REFRESH_RATE);
 Animation om4_animation = Animation(om4_leds, NUM_LEDS_PER_HEAD, (LC_BG_RAINBOW_SLOW_ROTATE), om4_rb, marquee_rb, trigger_rb, LC_DEFAULT_REFRESH_RATE);
 Animation om5_animation = Animation(om5_leds, NUM_LEDS_PER_HEAD, (LC_BG_RAINBOW_SLOW_ROTATE), om5_rb, marquee_rb, trigger_rb, LC_DEFAULT_REFRESH_RATE);
 Animation om6_animation = Animation(om6_leds, NUM_LEDS_PER_HEAD, (LC_BG_RAINBOW_SLOW_ROTATE), om6_rb, marquee_rb, trigger_rb, LC_DEFAULT_REFRESH_RATE);
@@ -276,6 +187,12 @@ bool pitch_has_changed = false;
 
 //This tracks the current head so the iteration isn't always in the same place.
 int head_offset = 0;
+
+//this controls whether lighting is enabled or not
+bool lighting_is_enabled = true;
+
+//this controls whether note on messages send triggers to the head that plays the note:
+bool note_trigger_is_enabled = false;
 
 //Start the hardware MIDI:
 MIDI_CREATE_INSTANCE(HardwareSerial, Serial1, MIDI);
@@ -332,6 +249,374 @@ void OnPitchChange(byte channel, int pitch){
     Serial.print(channel);
     Serial.println(".");
   #endif
+}
+
+//this will run control commands for the heads, such as enabling/disabling lighting and servos, as well as changing animation types
+void OnControlChange(byte channel, byte control_number, byte control_value){
+  handle_cc(channel, control_number, control_value);
+}
+
+//this interprets the CC messages read by either hardware of USB midi and takes the appropriate action.
+void handle_cc(byte channel, byte cc_number, byte cc_value){
+  //first we change the things that don't need to iterate through each head to be set properly:
+
+  //this will disable note trigger events:
+  if(cc_number == MIDI_CC_NOTE_TRIGGER_ENABLE){
+    //enable for any value other than 0
+    if(cc_value){
+      note_trigger_is_enabled = true;
+      #ifdef DEBUG
+        Serial.println("Trigger events occur on note_on messages.");
+      #endif
+      return;
+    }
+    else{
+      note_trigger_is_enabled = false;
+      #ifdef DEBUG
+        Serial.println("Trigger events no longer occur on note_on messages.");
+      #endif
+      return;
+    }
+  }
+  //this will enable or disable lighting animations. When disabled, lighting will remain in the last state it was in when disabled.
+  else if(cc_number == MIDI_CC_LIGHTING_ENABLE){
+    //enable for any value other than 0
+    if(cc_value){
+      lighting_is_enabled = true;
+      #ifdef DEBUG
+        Serial.println("Lighting updates are enabled.");
+      #endif
+      return;
+    }
+    else{
+      lighting_is_enabled = false;
+      #ifdef DEBUG
+        Serial.println("Light updates are disabled.");
+      #endif
+      return;
+    }
+  }
+
+  //some cc_numbers are head specific, so this variable sets the head properly if it's one of those.
+  uint8_t head;
+  //head 1 specific CC messages
+  if(
+    cc_number == MIDI_CC_OM1_BG_RAINBOW     ||
+    cc_number == MIDI_CC_OM1_BG_CHANGE      ||
+    cc_number == MIDI_CC_OM1_FG_RAINBOW     ||
+    cc_number == MIDI_CC_OM1_FG_CHANGE      ||
+    cc_number == MIDI_CC_OM1_TR_RAINBOW     ||
+    cc_number == MIDI_CC_OM1_TRIGGER        ||
+    cc_number == MIDI_CC_OM1_NOTE_TR_CHANGE
+    ){
+    head = 0;
+  }
+  //head 1 specific CC messages
+  if(
+    cc_number == MIDI_CC_OM2_BG_RAINBOW     ||
+    cc_number == MIDI_CC_OM2_BG_CHANGE      ||
+    cc_number == MIDI_CC_OM2_FG_RAINBOW     ||
+    cc_number == MIDI_CC_OM2_FG_CHANGE      ||
+    cc_number == MIDI_CC_OM2_TR_RAINBOW     ||
+    cc_number == MIDI_CC_OM2_TRIGGER        ||
+    cc_number == MIDI_CC_OM2_NOTE_TR_CHANGE
+    ){
+    head = 1;
+  }
+  //head 1 specific CC messages
+  if(
+    cc_number == MIDI_CC_OM3_BG_RAINBOW     ||
+    cc_number == MIDI_CC_OM3_BG_CHANGE      ||
+    cc_number == MIDI_CC_OM3_FG_RAINBOW     ||
+    cc_number == MIDI_CC_OM3_FG_CHANGE      ||
+    cc_number == MIDI_CC_OM3_TR_RAINBOW     ||
+    cc_number == MIDI_CC_OM3_TRIGGER        ||
+    cc_number == MIDI_CC_OM3_NOTE_TR_CHANGE
+    ){
+    head = 2;
+  }
+  //head 1 specific CC messages
+  if(
+    cc_number == MIDI_CC_OM4_BG_RAINBOW     ||
+    cc_number == MIDI_CC_OM4_BG_CHANGE      ||
+    cc_number == MIDI_CC_OM4_FG_RAINBOW     ||
+    cc_number == MIDI_CC_OM4_FG_CHANGE      ||
+    cc_number == MIDI_CC_OM4_TR_RAINBOW     ||
+    cc_number == MIDI_CC_OM4_TRIGGER        ||
+    cc_number == MIDI_CC_OM4_NOTE_TR_CHANGE
+    ){
+    head = 3;
+  }
+  //head 1 specific CC messages
+  if(
+    cc_number == MIDI_CC_OM5_BG_RAINBOW     ||
+    cc_number == MIDI_CC_OM5_BG_CHANGE      ||
+    cc_number == MIDI_CC_OM5_FG_RAINBOW     ||
+    cc_number == MIDI_CC_OM5_FG_CHANGE      ||
+    cc_number == MIDI_CC_OM5_TR_RAINBOW     ||
+    cc_number == MIDI_CC_OM5_TRIGGER        ||
+    cc_number == MIDI_CC_OM5_NOTE_TR_CHANGE
+    ){
+    head = 4;
+  }
+  //head 1 specific CC messages
+  if(
+    cc_number == MIDI_CC_OM6_BG_RAINBOW     ||
+    cc_number == MIDI_CC_OM6_BG_CHANGE      ||
+    cc_number == MIDI_CC_OM6_FG_RAINBOW     ||
+    cc_number == MIDI_CC_OM6_FG_CHANGE      ||
+    cc_number == MIDI_CC_OM6_TR_RAINBOW     ||
+    cc_number == MIDI_CC_OM6_TRIGGER        ||
+    cc_number == MIDI_CC_OM6_NOTE_TR_CHANGE
+    ){
+    head = 5;
+  }
+
+  //Head specific statements:
+
+  //Set the background rainbow
+  else if(cc_number == MIDI_CC_OM1_BG_RAINBOW){
+    if(cc_value < num_bg_rainbows){
+      oms[head].animation->change_rainbow(LC_BG, bg_array[cc_value]);
+      #ifdef DEBUG
+        Serial.print("Background rainbow changed to ");
+        Serial.println(cc_value);
+      #endif
+      return;
+    }
+    else{
+      //set to the largest value if the received CC message has more rainbows than the bg_array
+      oms[head].animation->change_rainbow(LC_BG, bg_array[num_bg_rainbows-1]);
+      #ifdef DEBUG
+        Serial.print("Background rainbow changed to ");
+        Serial.println(num_bg_rainbows-1);
+      #endif
+      return;
+    }
+  }
+  //Set the foreground rainbow
+  else if(cc_number == MIDI_CC_OM1_FG_RAINBOW){
+    if(cc_value < num_fg_rainbows){
+      oms[head].animation->change_rainbow(LC_FG, fg_array[cc_value]);
+      #ifdef DEBUG
+        Serial.print("Foreground rainbow changed to ");
+        Serial.println(cc_value);
+      #endif
+      return;
+    }
+    else{
+      //set to the largest value if the received CC message has more rainbows than the bg_array
+      oms[head].animation->change_rainbow(LC_FG, fg_array[num_fg_rainbows-1]);
+      #ifdef DEBUG
+        Serial.print("Foreground rainbow changed to ");
+        Serial.println(num_fg_rainbows-1);
+      #endif
+      return;
+    }
+  }
+  //set the trigger rainbow
+  else if(cc_number == MIDI_CC_OM1_TR_RAINBOW){
+    if(cc_value < num_fg_rainbows){
+      oms[head].animation->change_rainbow(LC_TRIGGER, trigger_array[cc_value]);
+      #ifdef DEBUG
+        Serial.print("Trigger rainbow changed to ");
+        Serial.println(cc_value);
+      #endif
+      return;
+    }
+    else{
+      //set to the largest value if the received CC message has more rainbows than the bg_array
+      oms[head].animation->change_rainbow(LC_TRIGGER, trigger_array[num_trigger_rainbows-1]);
+      #ifdef DEBUG
+        Serial.print("Trigger rainbow changed to ");
+        Serial.println(num_trigger_rainbows-1);
+      #endif
+      return;
+    }
+  }
+  //change the background animation type
+  else if(cc_number == MIDI_CC_OM1_BG_CHANGE){
+    //TIM: add check to make sure it's valid, as well as a default.
+    oms[head].animation->change_lighting_mode(cc_value);
+    #ifdef DEBUG
+      Serial.print("Foreground lighting mode has changed to ");
+      Serial.println(cc_value, HEX);
+    #endif
+    return;
+  }
+  //change the foreground animation type
+  else if(cc_number == MIDI_CC_OM1_FG_CHANGE){
+    //TIM: add check to make sure it's valid, as well as a default.
+    oms[head].animation->change_lighting_mode(cc_value<<8); //bit shifted because of how the lighting mode definitions work. See lighting_control.h
+    #ifdef DEBUG
+      Serial.print("Foreground lighting mode has changed to ");
+      Serial.println(cc_value, HEX);
+    #endif
+    return;
+  }
+  //fire off a trigger animation, regardless of the note trigger status
+  else if(cc_number == MIDI_CC_OM1_TRIGGER){
+    //TIM: add check to make sure it's valid, as well as a default.
+    #ifdef DEBUG
+      Serial.print("An event has been triggered of type ");
+      Serial.println(cc_value, HEX);
+    #endif
+    return;
+  }
+  //change the type of animation to use for note triggered animations - varies per head
+  else if(cc_number == MIDI_CC_OM1_NOTE_TR_CHANGE){
+    //TIM: add check to make sure it's valid, as well as a default.
+    note_trigger_type[head] = cc_value;
+    #ifdef DEBUG
+      Serial.print("Note Trigger mode has changed to ");
+      Serial.println(cc_value, HEX);
+    #endif
+    return;
+  }
+
+  //then we do this for loop because some cc messages apply to all heads at once and will need to be iterated through:
+  for(int h=0; h<NUM_OMIDITONES; h++){
+    //all notes off.
+    if(cc_number == MIDI_CC_ALL_NOTES_OFF || cc_number == MIDI_CC_ALL_SOUND_OFF){
+      //since each head can only play one note at a time, we only need to turn off the currently_playing_note
+      oms[h].note_off(oms[h].currently_playing_note());
+      //only return on the last head
+      if(h == (NUM_OMIDITONES-1)){
+        #ifdef DEBUG
+          Serial.println("All notes off CC message received.");
+        #endif
+        return;
+      }
+    }
+    //this will disable servo movements:
+    else if(cc_number == MIDI_CC_SERVO_ENABLE){
+      //enable for any value other than 0
+      if(cc_value){
+        oms[h].enable_servos();
+        //only return on the last head
+        if(h == (NUM_OMIDITONES-1)){
+          #ifdef DEBUG
+            Serial.println("Servos have been enabled.");
+          #endif
+          return;
+        }
+      }
+      else{
+        oms[h].disable_servos();
+        //only return on the last head
+        if(h == (NUM_OMIDITONES-1)){
+          #ifdef DEBUG
+            Serial.println("Servos been disabled.");
+          #endif
+          return;
+        }
+      }
+    }
+    //this will disable pitch correction:
+    else if(cc_number == MIDI_CC_PITCH_CORRECTION_ENABLE){
+      //enable for any value other than 0
+      if(cc_value){
+        oms[h].enable_pitch_correction();
+        if(h == (NUM_OMIDITONES-1)){
+          #ifdef DEBUG
+            Serial.println("Pitch Correction has been enabled.");
+          #endif
+          return;
+        }
+      }
+      else{
+        oms[h].disable_pitch_correction();
+        if(h == (NUM_OMIDITONES-1)){
+          #ifdef DEBUG
+            Serial.println("Pitch Correction has been disabled.");
+          #endif
+          return;
+        }
+      }
+    }
+    else if(cc_number == MIDI_CC_RESET_ALL_CONTROLLERS){
+      //reset all 6 heads.
+      oms[h].init();
+      #ifdef DEBUG
+        Serial.print("Manual Reset of head ");
+        Serial.print(h+1);
+        Serial.println(" triggered.");
+      #endif
+      return;
+    }
+  }// head for loop
+  //if it makes it here without returning, note that nothing happened.
+  #ifdef DEBUG
+    Serial.print("CC ");
+    Serial.print(cc_number);
+    Serial.println(" is unassigned. No action taken.");
+  #endif
+}
+
+//This will read the hardware MIDI and set or remove notes as needed.
+void read_hardware_MIDI(){
+  int type, note, velocity, channel, p1, p2, d1, d2, control_number, control_value;
+  if (MIDI.read()) {                    // Is there a MIDI message incoming ?
+    byte type = MIDI.getType();
+    switch (type) {
+      case midi::NoteOn:
+        note = MIDI.getData1();
+        velocity = MIDI.getData2();
+        channel = MIDI.getChannel();
+        if (velocity > 0) {
+          //Set the note on as usual:
+          add_note(note, velocity, channel);
+          note_has_changed = true;
+          #ifdef DEBUG
+            print_current_note_array();
+          #endif
+        } 
+        else {
+          //Set the note off.
+          remove_note(note);
+          note_has_changed = true;
+        #ifdef DEBUG
+          print_current_note_array();
+        #endif
+        }
+        break;
+      case midi::NoteOff:
+        note = MIDI.getData1();
+        velocity = MIDI.getData2();
+        channel = MIDI.getChannel();
+        //Set the note off as usual.
+        remove_note(note);
+        note_has_changed = true;
+        #ifdef DEBUG
+          print_current_note_array();
+        #endif
+        break;
+      case midi::PitchBend:
+        p1 = MIDI.getData1();
+        p2 = MIDI.getData2();
+        //shift the bits so it's a single number from -8192 to 8192.
+        current_pitch_shift[channel] = (p2<<7) + p1 - 8192;
+        pitch_has_changed = true;
+        #ifdef DEBUG
+          Serial.print("Pitch Shift set to ");
+          Serial.print(current_pitch_shift[channel]);
+          Serial.print(" on channel ");
+          Serial.print(channel);
+          Serial.println(".");
+        #endif
+        break;
+      case midi::ControlChange:
+        control_number = MIDI.getData1();
+        control_value = MIDI.getData2();
+        channel = MIDI.getChannel();
+        handle_cc(channel, control_number, control_value);
+        break;
+      default:
+        //this just clears the buffers when the stuff isn't used
+        d1 = MIDI.getData1();
+        d2 = MIDI.getData2();
+    }
+  } 
 }
 
 //This will check to see if a note is in the current_note_array and return the position of the note if it finds one, or return NO_NOTE if it does not.
@@ -414,65 +699,6 @@ void trigger_head_lighting_event(oMIDItone * om){
   om->animation->trigger_event(LC_TRIGGER_BG);
 }
 
-//This will read the hardware MIDI and set or remove notes as needed.
-void read_hardware_MIDI(){
-  int type, note, velocity, channel, p1, p2, d1, d2;
-  if (MIDI.read()) {                    // Is there a MIDI message incoming ?
-    byte type = MIDI.getType();
-    switch (type) {
-      case midi::NoteOn:
-        note = MIDI.getData1();
-        velocity = MIDI.getData2();
-        channel = MIDI.getChannel();
-        if (velocity > 0) {
-          //Set the note on as usual:
-          add_note(note, velocity, channel);
-          note_has_changed = true;
-          #ifdef DEBUG
-            print_current_note_array();
-          #endif
-        } 
-        else {
-          //Set the note off.
-          remove_note(note);
-          note_has_changed = true;
-        #ifdef DEBUG
-          print_current_note_array();
-        #endif
-        }
-        break;
-      case midi::NoteOff:
-        note = MIDI.getData1();
-        velocity = MIDI.getData2();
-        channel = MIDI.getChannel();
-        //Set the note off as usual.
-        remove_note(note);
-        note_has_changed = true;
-        #ifdef DEBUG
-          print_current_note_array();
-        #endif
-        break;
-      case midi::PitchBend:
-        p1 = MIDI.getData1();
-        p2 = MIDI.getData2();
-        //shift the bits so it's a single number from -8192 to 8192.
-        current_pitch_shift[channel] = (p2<<7) + p1 - 8192;
-        pitch_has_changed = true;
-        #ifdef DEBUG
-          Serial.print("Pitch Shift set to ");
-          Serial.print(current_pitch_shift[channel]);
-          Serial.print(" on channel ");
-          Serial.print(channel);
-          Serial.println(".");
-        #endif
-        break;
-      default:
-        d1 = MIDI.getData1();
-        d2 = MIDI.getData2();
-    }
-  } 
-}
-
 //this is a function to send commands to the oMIDItones connected to this controller based on the note_status_array and current_pitch_shift
 void update_oMIDItones(){
   //First set the pitch for all the running oMIDItones.
@@ -515,7 +741,9 @@ void update_oMIDItones(){
               //tell the head to play the note.
               oms[head_order_array[h]].note_on(current_note_array[n], current_velocity_array[n], current_channel_array[n]);
               //trigger a lighting update on the head
-              trigger_head_lighting_event(&oms[head_order_array[h]]);
+              if(note_trigger_is_enabled){
+                trigger_head_lighting_event(&oms[head_order_array[h]]);
+              }
               //remove the head from the unassigned heads array
               head_state[h] = NOT_AVAILABLE;
               #ifdef DEBUG
@@ -557,17 +785,6 @@ void setup(){
   }
   lc.update();
 
-  /* VU Meter testing
-  */
-  for(int i=0; i<1024; i++){
-    oms[2].animation->change_offset(LC_FG, i, 1024);
-    delay(1);
-    lc.update();
-  }
-  oms[2].animation->change_offset(LC_FG, 0, 1024);
-  lc.update();
-  //*/
-
   //init the om objects - This is going to take a while - like several minutes:
   for(int i=0; i<NUM_OMIDITONES; i++){
     //init the head
@@ -583,6 +800,7 @@ void setup(){
   usbMIDI.setHandleNoteOff(OnNoteOff);
   usbMIDI.setHandleNoteOn(OnNoteOn);
   usbMIDI.setHandlePitchChange(OnPitchChange);
+  usbMIDI.setHandleControlChange(OnControlChange);
 
   //Hardware MIDI init.
   MIDI.begin(MIDI_CHANNEL_OMNI);
@@ -602,5 +820,12 @@ void loop(){
   update_oMIDItones();
   //this will update all lighting functions on a regular basis
   //update_lighting(); //old - delete once lc is working
-  lc.update();
+  if(lighting_is_enabled){
+    int lighting_data_was_sent = lc.update();
+    if(lighting_data_was_sent == LC_STRIP_WRITTEN){
+      for(int h=0; h<NUM_OMIDITONES; h++){
+        oms[h].reset_pitch_correction();
+      }
+    }
+  }
 }

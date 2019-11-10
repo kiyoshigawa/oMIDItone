@@ -14,6 +14,9 @@ oMIDItone::oMIDItone(uint16_t signal_enable_optoisolator, uint16_t speaker_disab
   freq_reading_index = 0;
   current_freq = 0;
   last_analog_read = 1024;
+  pitch_correction_is_enabled = FREQUENCY_CORRECTION_DEFAULT_ENABLE_STATE;
+  servo_is_enabled = SERVO_DEFAULT_ENABLE_STATE;
+  pitch_correction_has_been_compromised = false;
   for(int i=0; i<NUM_MIDI_CHANNELS; i++){
     current_pitch_shift[i] = CENTER_PITCH_SHIFT;
   }
@@ -122,9 +125,11 @@ void oMIDItone::update(){
     }
     //continuously measure the current frequency and adjust the resistance as needed.
     //these two functions are now disabled as they cause more harm than good on an ongoing basis.
-    //Might bring back later for non-animated modes to record clean audio. TIM: Revisit
-    //measure_frequency();
-    //adjust_frequency();
+    //Might bring back later for non-animated modes to record clean audio.
+    if(pitch_correction_is_enabled){
+      measure_frequency();
+      adjust_frequency();
+    }
 
     //and set the resistance to a jittered value based on the adjusted current_resistance.
     set_jitter_resistance(current_resistance, JITTER);
@@ -133,7 +138,9 @@ void oMIDItone::update(){
   //Update servos at the specified animation update rate:
   if(last_servo_update > TIME_BETWEEN_SERVO_MOVEMENTS){
     //update the face-grabber servos:
-    servo_update();
+    if(servo_is_enabled){   
+      servo_update();
+    }
 
     //reset the timer to keep updates at the right frequency
     last_servo_update = 0;
@@ -336,6 +343,12 @@ uint32_t oMIDItone::pitch_adjusted_frequency(uint16_t note, uint16_t pitch_shift
 
 //this takes the frequency averaging code and puts it into a function to clean up the update function:
 void oMIDItone::measure_frequency(){
+  //if things are compromised, reset the frequency reading index to start over:
+  if(pitch_correction_has_been_compromised){
+    freq_reading_index = 0;
+    //reset the flag so pitch correction can continue until it is interrupted again.
+    pitch_correction_has_been_compromised = false;
+  }
   //this first bit is calculating the average continuously and storing it in current_freq
   if(is_rising_edge()){
     recent_freqs[freq_reading_index] = last_rising_edge;
@@ -349,7 +362,8 @@ void oMIDItone::measure_frequency(){
     //and reset the counter
     freq_reading_index = 0;
     //also update the measured_freqs array to be correct for the current resistasnce.
-    measured_freqs[current_resistance] = current_freq;
+    //TIM: Re-evaluate if disabling this was a good idea
+    //measured_freqs[current_resistance] = current_freq;
   }
 }
 
@@ -366,7 +380,7 @@ void oMIDItone::adjust_frequency(){
     uint32_t min_allowable_freq = current_desired_freq*(100+ALLOWABLE_NOTE_ERROR)/100;
 
     if(current_freq >= max_allowable_freq && current_freq <= min_allowable_freq){
-      //DOn't adjust anything.
+      //Don't adjust anything.
     }
     else if(current_freq < max_allowable_freq){
       current_resistance--;
@@ -605,10 +619,33 @@ void oMIDItone::servo_update(){
   if(current_velocity > 0 && current_note != NO_NOTE){
     servo_controller.setPWM(l_channel, 0, l_max);
     servo_controller.setPWM(r_channel, 0, r_max);
+    pitch_correction_has_been_compromised = true;
   }
   else{
     //Set both channels to the min value, closing the mouth.
     servo_controller.setPWM(l_channel, 0, l_min);
     servo_controller.setPWM(r_channel, 0, r_min);
+    pitch_correction_has_been_compromised = true;
   }
+}
+
+//these enable and disable frequency correction:
+void oMIDItone::enable_pitch_correction(){
+  pitch_correction_is_enabled = true;
+}
+void oMIDItone::disable_pitch_correction(){
+  pitch_correction_is_enabled = false;
+}
+
+//these enable and disable servos:
+void oMIDItone::enable_servos(){
+  servo_is_enabled = true;
+}
+void oMIDItone::disable_servos(){
+  servo_is_enabled = false;
+}
+
+//this will cancel the current pitch correction testing if anything disruptive happens during the testing to avoid incorrect corrections
+void oMIDItone::reset_pitch_correction(){
+  pitch_correction_has_been_compromised = true;
 }
