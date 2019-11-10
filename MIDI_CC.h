@@ -13,12 +13,12 @@ It got too long, so I moved it to an h file
 
 //these define the foreground lighting modes which correspond to the MIDI note values. They should be sent as the CC Value
 //make sure to update as lighting controller is updated with new modes
-#define MIDI_CCV_BG_TYPE_NONE 0
-#define MIDI_CCV_BG_TYPE_MARQUEE_SOLID_FIXED 1
-#define MIDI_CCV_BG_TYPE_MARQUEE_SOLID 2
-#define MIDI_CCV_BG_TYPE_MARQUEE_SLOW_FADE_FIXED 3
-#define MIDI_CCV_BG_TYPE_MARQUEE_SLOW_FADE 4
-#define MIDI_CCV_BG_TYPE_VU_METER 5
+#define MIDI_CCV_FG_TYPE_NONE 0
+#define MIDI_CCV_FG_TYPE_MARQUEE_SOLID_FIXED 1
+#define MIDI_CCV_FG_TYPE_MARQUEE_SOLID 2
+#define MIDI_CCV_FG_TYPE_MARQUEE_SLOW_FADE_FIXED 3
+#define MIDI_CCV_FG_TYPE_MARQUEE_SLOW_FADE 4
+#define MIDI_CCV_FG_TYPE_VU_METER 5
 
 //These define which trigger to use when receiving a MICI_CC_OM#_TRIGGER command. They should be sent as the CC Value
 //make sure to update as lighting controller is updated with new modes
