@@ -128,6 +128,7 @@ uint16_t om6_r_channel = 15;
 uint16_t om6_leds[NUM_LEDS_PER_HEAD] = {35, 34, 33, 32, 31, 30, 71, 70, 69, 68, 67, 66, 36, 37, 38, 39, 40, 41};
 
 //these are arrays of rainbow structures for use in MIDI color selection:
+//the first 6 are the default for each head, the rest can be set via MIDI whenever you like.
 const uint16_t num_bg_rainbows = 6;
 const rainbow bg_array[num_bg_rainbows] = {om1_rb, om2_rb, om3_rb, om4_rb, om5_rb, om6_rb};
 const uint16_t num_fg_rainbows = 6;

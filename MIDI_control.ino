@@ -804,6 +804,7 @@ void handle_cc(byte channel, byte cc_number, byte cc_value){
         #ifdef MIDI_DEBUG
           Serial.println("Hard Reset MIDI CC 121 - Notes and Pitch Shift to Defaults");
         #endif
+        return;
       }
     }
   }// head for loop
