@@ -186,6 +186,10 @@ class oMIDItone {
     void enable_servos();
     void disable_servos();
 
+    //this allows manual setting of servos when they are disabled by the above function:
+    //position is a value between 0 and 127, 0 being closed, 127 being open.
+    void set_servos(uint16_t position);
+
     //this will cancel the current pitch correction testing if anything disruptive happens during the testing to avoid incorrect corrections
     void reset_pitch_correction();
 

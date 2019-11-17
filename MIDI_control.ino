@@ -55,6 +55,12 @@ Otherwise the new modes will not work with the oMIDItone, since they are not exp
 #define MIDI_CC_RESET_ALL_CONTROLLERS 121
 #define MIDI_CC_ALL_NOTES_OFF 123
 
+//this is used as the default note value for pitsh shift when a CC 121 is sent.
+#define DEFAULT_PITCH_SHIFT 0
+
+//this resets the MCU and forces a new tune-up:
+#define MIDI_CC_HARD_RESET 9
+
 //These control whether major features are enabled or disabled. A value of 0 disables, all other values enable
 #define MIDI_CC_PITCH_CORRECTION_ENABLE 14
 #define MIDI_CC_NOTE_TRIGGER_ENABLE 15
@@ -97,6 +103,15 @@ Otherwise the new modes will not work with the oMIDItone, since they are not exp
 #define MIDI_CC_OM5_FG_CHANGE 62
 #define MIDI_CC_OM6_FG_CHANGE 63
 
+//these allow setting the servo position of all heads directly, even when MIDI_CC_SERVO_ENABLE is not on. 
+//Useful for opening mouths when servos are disabled to record audio.
+#define MIDI_CC_OM1_SERVO_POSITION 41
+#define MIDI_CC_OM2_SERVO_POSITION 85
+#define MIDI_CC_OM3_SERVO_POSITION 86
+#define MIDI_CC_OM4_SERVO_POSITION 87
+#define MIDI_CC_OM5_SERVO_POSITION 89
+#define MIDI_CC_OM6_SERVO_POSITION 90
+
 //trigger rainbow selections will select from the tr_rainbow_array[]
 //the CC value corresponds to the index for the array. If it is too large, it goes to the max value.
 #define MIDI_CC_OM1_TR_RAINBOW 102
@@ -134,7 +149,8 @@ bool is_head_1(byte cc_number){
     cc_number == MIDI_CC_OM1_FG_CHANGE      ||
     cc_number == MIDI_CC_OM1_TR_RAINBOW     ||
     cc_number == MIDI_CC_OM1_TRIGGER        ||
-    cc_number == MIDI_CC_OM1_NOTE_TR_CHANGE 
+    cc_number == MIDI_CC_OM1_NOTE_TR_CHANGE ||
+    cc_number == MIDI_CC_OM1_SERVO_POSITION
   ){
     return true;
   }
@@ -152,7 +168,8 @@ bool is_head_2(byte cc_number){
     cc_number == MIDI_CC_OM2_FG_CHANGE      ||
     cc_number == MIDI_CC_OM2_TR_RAINBOW     ||
     cc_number == MIDI_CC_OM2_TRIGGER        ||
-    cc_number == MIDI_CC_OM2_NOTE_TR_CHANGE 
+    cc_number == MIDI_CC_OM2_NOTE_TR_CHANGE ||
+    cc_number == MIDI_CC_OM2_SERVO_POSITION
   ){
     return true;
   }
@@ -170,7 +187,8 @@ bool is_head_3(byte cc_number){
     cc_number == MIDI_CC_OM3_FG_CHANGE      ||
     cc_number == MIDI_CC_OM3_TR_RAINBOW     ||
     cc_number == MIDI_CC_OM3_TRIGGER        ||
-    cc_number == MIDI_CC_OM3_NOTE_TR_CHANGE 
+    cc_number == MIDI_CC_OM3_NOTE_TR_CHANGE ||
+    cc_number == MIDI_CC_OM3_SERVO_POSITION
   ){
     return true;
   }
@@ -188,7 +206,8 @@ bool is_head_4(byte cc_number){
     cc_number == MIDI_CC_OM4_FG_CHANGE      ||
     cc_number == MIDI_CC_OM4_TR_RAINBOW     ||
     cc_number == MIDI_CC_OM4_TRIGGER        ||
-    cc_number == MIDI_CC_OM4_NOTE_TR_CHANGE 
+    cc_number == MIDI_CC_OM4_NOTE_TR_CHANGE ||
+    cc_number == MIDI_CC_OM4_SERVO_POSITION
   ){
     return true;
   }
@@ -206,7 +225,8 @@ bool is_head_5(byte cc_number){
     cc_number == MIDI_CC_OM5_FG_CHANGE      ||
     cc_number == MIDI_CC_OM5_TR_RAINBOW     ||
     cc_number == MIDI_CC_OM5_TRIGGER        ||
-    cc_number == MIDI_CC_OM5_NOTE_TR_CHANGE 
+    cc_number == MIDI_CC_OM5_NOTE_TR_CHANGE ||
+    cc_number == MIDI_CC_OM5_SERVO_POSITION
   ){
     return true;
   }
@@ -224,7 +244,8 @@ bool is_head_6(byte cc_number){
     cc_number == MIDI_CC_OM6_FG_CHANGE      ||
     cc_number == MIDI_CC_OM6_TR_RAINBOW     ||
     cc_number == MIDI_CC_OM6_TRIGGER        ||
-    cc_number == MIDI_CC_OM6_NOTE_TR_CHANGE 
+    cc_number == MIDI_CC_OM6_NOTE_TR_CHANGE ||
+    cc_number == MIDI_CC_OM6_SERVO_POSITION
   ){
     return true;
   }
@@ -436,10 +457,10 @@ void handle_cc(byte channel, byte cc_number, byte cc_value){
     }
   }
   //this forces a software reset of the teensy board
-  else if(cc_number == MIDI_CC_RESET_ALL_CONTROLLERS){
+  else if(cc_number == MIDI_CC_HARD_RESET){
     #ifdef MIDI_DEBUG
-      Serial.print("Manual Reset of board triggered. Shutting down...");
-      delay(500);
+      Serial.println("Manual Reset of board triggered. Shutting down...");
+      delay(1000);
     #endif
     _softRestart();
   }
@@ -671,13 +692,43 @@ void handle_cc(byte channel, byte cc_number, byte cc_value){
           cc_number == MIDI_CC_OM5_NOTE_TR_CHANGE ||
           cc_number == MIDI_CC_OM6_NOTE_TR_CHANGE 
          ){
-    //TIM: add check to make sure it's valid, as well as a default.
-    note_trigger_type[head] = cc_value;
+    if(is_valid_trigger(cc_value)){
+      note_trigger_type[head] = cc_value;
+      #ifdef MIDI_DEBUG
+        Serial.print("Head ");
+        Serial.print(head+1);
+        Serial.print(": Note Trigger mode has changed to ");
+        Serial.println(cc_value, HEX);
+      #endif
+      return;
+    }
+    else{
+      note_trigger_type[head] = DEFAULT_TRIGGER;
+      #ifdef MIDI_DEBUG
+        Serial.print("Head ");
+        Serial.print(head+1);
+        Serial.print(": An event has been triggered of type ");
+        Serial.println(DEFAULT_TRIGGER, HEX);
+      #endif
+      return;
+    }
+  }
+  //manually set the servo position regardless of if servos are enabled or disabled:
+  else if(
+          cc_number == MIDI_CC_OM1_SERVO_POSITION ||
+          cc_number == MIDI_CC_OM2_SERVO_POSITION ||
+          cc_number == MIDI_CC_OM3_SERVO_POSITION ||
+          cc_number == MIDI_CC_OM4_SERVO_POSITION ||
+          cc_number == MIDI_CC_OM5_SERVO_POSITION ||
+          cc_number == MIDI_CC_OM6_SERVO_POSITION 
+         ){
+    //the 0-127 MIDI cc_value range works with the set_servos() function of the heads:
+    oms[head].set_servos(cc_value);
     #ifdef MIDI_DEBUG
       Serial.print("Head ");
       Serial.print(head+1);
-      Serial.print(": Note Trigger mode has changed to ");
-      Serial.println(cc_value, HEX);
+      Serial.print(": servo position set to ");
+      Serial.println(cc_value);
     #endif
     return;
   }
@@ -740,6 +791,19 @@ void handle_cc(byte channel, byte cc_number, byte cc_value){
           #endif
           return;
         }
+      }
+    }
+    //this resets all notes and pitch shift to default values on each head
+    else if(cc_number == MIDI_CC_RESET_ALL_CONTROLLERS){
+      for(int i=0; i<16; i++){
+        oms[h].set_pitch_shift(DEFAULT_PITCH_SHIFT, i);
+      }
+      oms[h].note_off(oms[h].currently_playing_note());
+      oms[h].update();
+      if(h == (NUM_OMIDITONES-1)){
+        #ifdef MIDI_DEBUG
+          Serial.println("Hard Reset MIDI CC 121 - Notes and Pitch Shift to Defaults");
+        #endif
       }
     }
   }// head for loop

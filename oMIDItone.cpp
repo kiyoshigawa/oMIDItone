@@ -646,6 +646,16 @@ void oMIDItone::disable_servos(){
   servo_is_enabled = false;
 }
 
+//this allows manual setting of servos when they are disabled by the above functions:
+//position is a value between 0 and 127, 0 being closed, 127 being open.
+void oMIDItone::set_servos(uint16_t position){
+  uint16_t l_servo_value = map(position, 0, 127, l_min, l_max);
+  uint16_t r_servo_value = map(position, 0, 127, r_min, r_max);
+  servo_controller.setPWM(l_channel, 0, l_servo_value);
+  servo_controller.setPWM(r_channel, 0, r_servo_value);
+  pitch_correction_has_been_compromised = true;
+}
+
 //this will cancel the current pitch correction testing if anything disruptive happens during the testing to avoid incorrect corrections
 void oMIDItone::reset_pitch_correction(){
   pitch_correction_has_been_compromised = true;

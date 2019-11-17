@@ -240,8 +240,7 @@ const rainbow om1_rb = {
     red, 
     Color(64,0,0),
     red, 
-    Color(64,0,0),
-    red 
+    Color(64,0,0)
   },
   .num_colors = 9
 };
@@ -255,10 +254,9 @@ const rainbow om2_rb = {
     yellow,
     Color(64,64,0),
     yellow,
-    Color(64,64,0),
-    yellow 
+    Color(64,64,0)
   },
-  .num_colors = 9
+  .num_colors = 8
 };
 
 const rainbow om3_rb = {
@@ -270,10 +268,9 @@ const rainbow om3_rb = {
     sky_blue, 
     Color(0,64,64),
     sky_blue, 
-    Color(0,64,64),
-    sky_blue 
+    Color(0,64,64)
   },
-  .num_colors = 9
+  .num_colors = 8
 };
 
 const rainbow om4_rb = {
@@ -285,10 +282,9 @@ const rainbow om4_rb = {
     purple, 
     Color(64,0,64),
     purple, 
-    Color(64,0,64),
-    purple 
+    Color(64,0,64)
   },
-  .num_colors = 9
+  .num_colors = 8
 };
 
 const rainbow om5_rb = {
@@ -300,10 +296,9 @@ const rainbow om5_rb = {
     green, 
     Color(0,64,0),
     green, 
-    Color(0,64,0),
-    green 
+    Color(0,64,0)
   },
-  .num_colors = 9
+  .num_colors = 8
 };
 
 const rainbow om6_rb = {
@@ -315,10 +310,9 @@ const rainbow om6_rb = {
     blue, 
     Color(0,0,64),
     blue, 
-    Color(0,0,64),
-    blue 
+    Color(0,0,64)
   },
-  .num_colors = 9
+  .num_colors = 8
 };
 
 const rainbow marquee_rb = {
