@@ -128,7 +128,6 @@ void oMIDItone::update(){
     //Might bring back later for non-animated modes to record clean audio.
     if(pitch_correction_is_enabled){
       measure_frequency();
-      adjust_frequency();
     }
 
     //and set the resistance to a jittered value based on the adjusted current_resistance.
@@ -193,7 +192,7 @@ void oMIDItone::note_on(uint16_t note, uint16_t velocity, uint16_t channel){
       recent_freqs[i] = pitch_adjusted_frequency(current_note, current_pitch_shift[channel]);
     }
     //set the current_resistance to a value that was previously measured as close to the desired note's frequency.
-    current_resistance = frequency_to_resistance(midi_freqs[current_note]);
+    current_resistance = frequency_to_resistance(pitch_adjusted_frequency(current_note, current_pitch_shift[current_channel]));
     update();
   }
   else{
@@ -343,17 +342,46 @@ uint32_t oMIDItone::pitch_adjusted_frequency(uint16_t note, uint16_t pitch_shift
 
 //this takes the frequency averaging code and puts it into a function to clean up the update function:
 void oMIDItone::measure_frequency(){
-  //if things are compromised, reset the frequency reading index to start over:
-  if(pitch_correction_has_been_compromised){
-    freq_reading_index = 0;
-    //reset the flag so pitch correction can continue until it is interrupted again.
-    pitch_correction_has_been_compromised = false;
-  }
   //this first bit is calculating the average continuously and storing it in current_freq
   if(is_rising_edge()){
-    recent_freqs[freq_reading_index] = last_rising_edge;
-    last_rising_edge = 0;
-    freq_reading_index++;
+    uint32_t currently_desired_freq = pitch_adjusted_frequency(current_note, current_pitch_shift[current_channel]);
+    //sanity check on the reading - it should never be more than ALLOWABLE_FREQUENCY_READING_VARIANCE percent off of the desired frequency.
+    #ifdef PITCH_DEBUG
+      Serial.print("LRE: ");
+      Serial.println(last_rising_edge);
+      Serial.print("current_adjusted_frequency: ");
+      Serial.println(currently_desired_freq);
+    #endif
+    if( (last_rising_edge > (currently_desired_freq*(100-ALLOWABLE_FREQUENCY_READING_VARIANCE)/100)) && 
+        (last_rising_edge < (currently_desired_freq*(100+ALLOWABLE_FREQUENCY_READING_VARIANCE)/100))
+      ){
+      //if things are compromised, reset the last_rising_edge and start over:
+      if(pitch_correction_has_been_compromised){
+        last_rising_edge = 0;
+        //reset the flag so pitch correction can continue until it is interrupted again.
+        pitch_correction_has_been_compromised = false;
+        #ifdef PITCH_DEBUG
+            Serial.println("Pitch Correction Compromised.");
+        #endif
+      }
+      else{
+        recent_freqs[freq_reading_index] = last_rising_edge;
+        last_rising_edge = 0;
+        freq_reading_index++;
+        #ifdef PITCH_DEBUG
+          Serial.println("Frequency Successfully measured.");
+        #endif
+      }
+    }
+    else{
+      //take action as if things are compromised and reset the last_rising_edge to start over:
+      last_rising_edge = 0;
+      //reset the flag so pitch correction can continue until it is interrupted again.
+      pitch_correction_has_been_compromised = false;
+      #ifdef PITCH_DEBUG
+        Serial.println("Last_rising_edge out of valid ranges.");
+      #endif
+    }
   }
   //take more readings on init to get more accurate note values:
   if(freq_reading_index >= NUM_FREQ_READINGS && current_note != NO_NOTE){
@@ -361,8 +389,10 @@ void oMIDItone::measure_frequency(){
     current_freq = average(recent_freqs, NUM_FREQ_READINGS);
     //and reset the counter
     freq_reading_index = 0;
+    //only when you've had a valid reading should the frequency be adjusted
+    adjust_frequency();
     //also update the measured_freqs array to be correct for the current resistasnce.
-    //TIM: Re-evaluate if disabling this was a good idea
+    //TIM: Leaving this commented out for now, seems to prevent drifting over time, but required more frequent hard resets
     //measured_freqs[current_resistance] = current_freq;
   }
 }

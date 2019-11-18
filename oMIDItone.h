@@ -51,6 +51,12 @@ lighting modes and servo animation modes, as well as for direct control if I wan
   #define OMIDITONE_DEBUG
 #endif
 
+//comment this out to disable pitch debug messages
+//this will turn on or off output messages about the frequency measurements in the measure_frequency() function:
+#ifndef PITCH_DEBUG
+  //#define PITCH_DEBUG
+#endif
+
 //this controls default state of frequency correction
 #define FREQUENCY_CORRECTION_DEFAULT_ENABLE_STATE true
 
@@ -86,6 +92,9 @@ lighting modes and servo animation modes, as well as for direct control if I wan
 
 //this is the % difference that a note can be off to trigger correction, as a number from 0-100
 #define ALLOWABLE_NOTE_ERROR 1
+
+//This is the % off that a frequency reading can be before it's determined to be invalid and thrown out, as a number from 0-100:
+#define ALLOWABLE_FREQUENCY_READING_VARIANCE 50
 
 //this is to make sure that the rising edge isn't measured too often (in us):
 #define MIN_TIME_BETWEEN_RISING_EDGE_MEASUREMENTS 1
