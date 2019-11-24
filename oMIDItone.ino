@@ -46,6 +46,29 @@ void _softRestart()
 //This controls the lighting animation timing. 16667 ~= 60Hz, 33333 ~= 30Hz
 #define TIME_BETWEEN_LIGHTING_UPDATES 33333
 
+//these are default lighting info for the heads:
+#define DEFAULT_BG_MODE LC_BG_RAINBOW_SLOW_ROTATE
+#define DEFAULT_FG_MODE LC_FG_NONE
+#define DEFAULT_TRIGGER_MODE LC_TRIGGER_COLOR_PULSE
+#define DEFAULT_OM1_BG_RAINBOW 15
+#define DEFAULT_OM2_BG_RAINBOW 16
+#define DEFAULT_OM3_BG_RAINBOW 17
+#define DEFAULT_OM4_BG_RAINBOW 18
+#define DEFAULT_OM5_BG_RAINBOW 19
+#define DEFAULT_OM6_BG_RAINBOW 20
+#define DEFAULT_OM1_FG_RAINBOW 21
+#define DEFAULT_OM2_FG_RAINBOW 21
+#define DEFAULT_OM3_FG_RAINBOW 21
+#define DEFAULT_OM4_FG_RAINBOW 21
+#define DEFAULT_OM5_FG_RAINBOW 21
+#define DEFAULT_OM6_FG_RAINBOW 21
+#define DEFAULT_OM1_TRIGGER_RAINBOW 21
+#define DEFAULT_OM2_TRIGGER_RAINBOW 21
+#define DEFAULT_OM3_TRIGGER_RAINBOW 21
+#define DEFAULT_OM4_TRIGGER_RAINBOW 21
+#define DEFAULT_OM5_TRIGGER_RAINBOW 21
+#define DEFAULT_OM6_TRIGGER_RAINBOW 21
+
 // Pin and other head-specific Definitions
 //om#_leds[] arrays are per head ordered from left to right, the first 6 are front leds, the next 6 are the back top, and the final 6 are the back bottom leds
 //Red Head:
@@ -127,30 +150,51 @@ uint16_t om6_l_channel = 14;
 uint16_t om6_r_channel = 15;
 uint16_t om6_leds[NUM_LEDS_PER_HEAD] = {35, 34, 33, 32, 31, 30, 71, 70, 69, 68, 67, 66, 36, 37, 38, 39, 40, 41};
 
-//these are arrays of rainbow structures for use in MIDI color selection:
-//the first 6 are the default for each head, the rest can be set via MIDI whenever you like.
-const uint16_t num_bg_rainbows = 6;
-const rainbow bg_array[num_bg_rainbows] = {om1_rb, om2_rb, om3_rb, om4_rb, om5_rb, om6_rb};
-const uint16_t num_fg_rainbows = 6;
-const rainbow fg_array[num_fg_rainbows] = {marquee_rb, marquee_rb, marquee_rb, marquee_rb, marquee_rb, marquee_rb};
-const uint16_t num_trigger_rainbows = 6;
-const rainbow trigger_array[num_trigger_rainbows] = {trigger_rb, trigger_rb, trigger_rb, trigger_rb, trigger_rb, trigger_rb};
-
 //this array controls the type of notes being sent to each head on note_trigger events when they are active:
-uint16_t note_trigger_type[NUM_OMIDITONES] = {LC_TRIGGER_COLOR_PULSE_SLOW_FADE, 
-                                              LC_TRIGGER_COLOR_PULSE_SLOW_FADE, 
-                                              LC_TRIGGER_COLOR_PULSE_SLOW_FADE, 
-                                              LC_TRIGGER_COLOR_PULSE_SLOW_FADE, 
-                                              LC_TRIGGER_COLOR_PULSE_SLOW_FADE, 
-                                              LC_TRIGGER_COLOR_PULSE_SLOW_FADE};
+uint16_t note_trigger_type[NUM_OMIDITONES] = {DEFAULT_TRIGGER_MODE, 
+                                              DEFAULT_TRIGGER_MODE, 
+                                              DEFAULT_TRIGGER_MODE, 
+                                              DEFAULT_TRIGGER_MODE, 
+                                              DEFAULT_TRIGGER_MODE, 
+                                              DEFAULT_TRIGGER_MODE};
 
 //these are the Animation objects for the heads above - they will control the animation per-head.
-Animation om1_animation = Animation(om1_leds, NUM_LEDS_PER_HEAD, (LC_BG_RAINBOW_SLOW_ROTATE), om1_rb, marquee_rb, trigger_rb, LC_DEFAULT_REFRESH_RATE);
-Animation om2_animation = Animation(om2_leds, NUM_LEDS_PER_HEAD, (LC_BG_RAINBOW_SLOW_ROTATE), om2_rb, marquee_rb, trigger_rb, LC_DEFAULT_REFRESH_RATE);
-Animation om3_animation = Animation(om3_leds, NUM_LEDS_PER_HEAD, (LC_BG_RAINBOW_SLOW_ROTATE), om3_rb, marquee_rb, trigger_rb, LC_DEFAULT_REFRESH_RATE);
-Animation om4_animation = Animation(om4_leds, NUM_LEDS_PER_HEAD, (LC_BG_RAINBOW_SLOW_ROTATE), om4_rb, marquee_rb, trigger_rb, LC_DEFAULT_REFRESH_RATE);
-Animation om5_animation = Animation(om5_leds, NUM_LEDS_PER_HEAD, (LC_BG_RAINBOW_SLOW_ROTATE), om5_rb, marquee_rb, trigger_rb, LC_DEFAULT_REFRESH_RATE);
-Animation om6_animation = Animation(om6_leds, NUM_LEDS_PER_HEAD, (LC_BG_RAINBOW_SLOW_ROTATE), om6_rb, marquee_rb, trigger_rb, LC_DEFAULT_REFRESH_RATE);
+Animation om1_animation = Animation(om1_leds, NUM_LEDS_PER_HEAD, 
+                                    (DEFAULT_BG_MODE | DEFAULT_FG_MODE), 
+                                    rb_array[DEFAULT_OM1_BG_RAINBOW], 
+                                    rb_array[DEFAULT_OM1_FG_RAINBOW], 
+                                    rb_array[DEFAULT_OM1_TRIGGER_RAINBOW], 
+                                    LC_DEFAULT_REFRESH_RATE);
+Animation om2_animation = Animation(om2_leds, NUM_LEDS_PER_HEAD, 
+                                    (DEFAULT_BG_MODE | DEFAULT_FG_MODE), 
+                                    rb_array[DEFAULT_OM2_BG_RAINBOW], 
+                                    rb_array[DEFAULT_OM2_FG_RAINBOW], 
+                                    rb_array[DEFAULT_OM2_TRIGGER_RAINBOW], 
+                                    LC_DEFAULT_REFRESH_RATE);
+Animation om3_animation = Animation(om3_leds, NUM_LEDS_PER_HEAD, 
+                                    (DEFAULT_BG_MODE | DEFAULT_FG_MODE), 
+                                    rb_array[DEFAULT_OM3_BG_RAINBOW], 
+                                    rb_array[DEFAULT_OM3_FG_RAINBOW], 
+                                    rb_array[DEFAULT_OM3_TRIGGER_RAINBOW], 
+                                    LC_DEFAULT_REFRESH_RATE);
+Animation om4_animation = Animation(om4_leds, NUM_LEDS_PER_HEAD, 
+                                    (DEFAULT_BG_MODE | DEFAULT_FG_MODE), 
+                                    rb_array[DEFAULT_OM4_BG_RAINBOW], 
+                                    rb_array[DEFAULT_OM4_FG_RAINBOW], 
+                                    rb_array[DEFAULT_OM4_TRIGGER_RAINBOW], 
+                                    LC_DEFAULT_REFRESH_RATE);
+Animation om5_animation = Animation(om5_leds, NUM_LEDS_PER_HEAD, 
+                                    (DEFAULT_BG_MODE | DEFAULT_FG_MODE), 
+                                    rb_array[DEFAULT_OM5_BG_RAINBOW], 
+                                    rb_array[DEFAULT_OM5_FG_RAINBOW], 
+                                    rb_array[DEFAULT_OM5_TRIGGER_RAINBOW], 
+                                    LC_DEFAULT_REFRESH_RATE);
+Animation om6_animation = Animation(om6_leds, NUM_LEDS_PER_HEAD, 
+                                    (DEFAULT_BG_MODE | DEFAULT_FG_MODE), 
+                                    rb_array[DEFAULT_OM6_BG_RAINBOW], 
+                                    rb_array[DEFAULT_OM6_FG_RAINBOW], 
+                                    rb_array[DEFAULT_OM6_TRIGGER_RAINBOW], 
+                                    LC_DEFAULT_REFRESH_RATE);
 
 //This is the LED strip object to control all the lighting on the board
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(LED_TOTAL_NUM, LED_DATA_PIN, LED_COLOR_ORDER + LED_SPEED);

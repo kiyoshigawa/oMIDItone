@@ -392,7 +392,7 @@ void oMIDItone::measure_frequency(){
     //only when you've had a valid reading should the frequency be adjusted
     adjust_frequency();
     //also update the measured_freqs array to be correct for the current resistasnce.
-    //TIM: Leaving this commented out for now, seems to prevent drifting over time, but required more frequent hard resets
+    //TIM: Leaving this commented out for now, seems to prevent drifting over time, but required occasional hard resets
     //measured_freqs[current_resistance] = current_freq;
   }
 }

@@ -503,8 +503,8 @@ void handle_cc(byte channel, byte cc_number, byte cc_value){
       cc_number == MIDI_CC_OM5_BG_RAINBOW ||
       cc_number == MIDI_CC_OM6_BG_RAINBOW 
     ){
-    if(cc_value < num_bg_rainbows){
-      oms[head].animation->change_rainbow(LC_BG, bg_array[cc_value]);
+    if(cc_value < num_rainbows){
+      oms[head].animation->change_rainbow(LC_BG, rb_array[cc_value]);
       #ifdef MIDI_DEBUG
         Serial.print("Head ");
         Serial.print(head+1);
@@ -515,12 +515,12 @@ void handle_cc(byte channel, byte cc_number, byte cc_value){
     }
     else{
       //set to the largest value if the received CC message has more rainbows than the bg_array
-      oms[head].animation->change_rainbow(LC_BG, bg_array[num_bg_rainbows-1]);
+      oms[head].animation->change_rainbow(LC_BG, rb_array[0]);
       #ifdef MIDI_DEBUG
         Serial.print("Head ");
         Serial.print(head+1);
         Serial.print(": Background rainbow changed to ");
-        Serial.println(num_bg_rainbows-1);
+        Serial.println(0);
       #endif
       return;
     }
@@ -534,8 +534,8 @@ void handle_cc(byte channel, byte cc_number, byte cc_value){
           cc_number == MIDI_CC_OM5_FG_RAINBOW ||
           cc_number == MIDI_CC_OM6_FG_RAINBOW 
          ){
-    if(cc_value < num_fg_rainbows){
-      oms[head].animation->change_rainbow(LC_FG, fg_array[cc_value]);
+    if(cc_value < num_rainbows){
+      oms[head].animation->change_rainbow(LC_FG, rb_array[cc_value]);
       #ifdef MIDI_DEBUG
         Serial.print("Head ");
         Serial.print(head+1);
@@ -546,12 +546,12 @@ void handle_cc(byte channel, byte cc_number, byte cc_value){
     }
     else{
       //set to the largest value if the received CC message has more rainbows than the bg_array
-      oms[head].animation->change_rainbow(LC_FG, fg_array[num_fg_rainbows-1]);
+      oms[head].animation->change_rainbow(LC_FG, rb_array[0]);
       #ifdef MIDI_DEBUG
         Serial.print("Head ");
         Serial.print(head+1);
         Serial.print(": Foreground rainbow changed to ");
-        Serial.println(num_fg_rainbows-1);
+        Serial.println(0);
       #endif
       return;
     }
@@ -565,8 +565,8 @@ void handle_cc(byte channel, byte cc_number, byte cc_value){
           cc_number == MIDI_CC_OM5_TR_RAINBOW ||
           cc_number == MIDI_CC_OM6_TR_RAINBOW 
          ){
-    if(cc_value < num_fg_rainbows){
-      oms[head].animation->change_rainbow(LC_TRIGGER, trigger_array[cc_value]);
+    if(cc_value < num_rainbows){
+      oms[head].animation->change_rainbow(LC_TRIGGER, rb_array[cc_value]);
       #ifdef MIDI_DEBUG
         Serial.print("Head ");
         Serial.print(head+1);
@@ -577,12 +577,12 @@ void handle_cc(byte channel, byte cc_number, byte cc_value){
     }
     else{
       //set to the largest value if the received CC message has more rainbows than the bg_array
-      oms[head].animation->change_rainbow(LC_TRIGGER, trigger_array[num_trigger_rainbows-1]);
+      oms[head].animation->change_rainbow(LC_TRIGGER, rb_array[0]);
       #ifdef MIDI_DEBUG
         Serial.print("Head ");
         Serial.print(head+1);
         Serial.print(": Trigger rainbow changed to ");
-        Serial.println(num_trigger_rainbows-1);
+        Serial.println(0);
       #endif
       return;
     }

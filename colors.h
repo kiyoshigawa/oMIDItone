@@ -69,9 +69,8 @@ const rainbow r_vu = {
   .num_colors = 9
 };
 
-//these are the various 'rainbows' that can be swapped between for color selection on rainbow functions
-//rainbow1 is the traditional roygbiv rainbow pattern
-const rainbow r1 = {
+//this is the traditional roygbiv rainbow pattern
+const rainbow r3 = {
   .colors = {
     red,
     yellow,
@@ -83,8 +82,8 @@ const rainbow r1 = {
   .num_colors = 6
 };
 
-//rainbow r2 is a double rainbow of r1
-const rainbow r2 = {
+//rainbow is a double rainbow of r3
+const rainbow r4 = {
   .colors = { 
     red,
     yellow,
@@ -102,8 +101,33 @@ const rainbow r2 = {
   .num_colors = 12
 };
 
+//rainbow is a triple rainbow of r3
+const rainbow r5 = {
+  .colors = { 
+    red,
+    yellow,
+    green,
+    sky_blue,
+    blue,
+    purple,
+    red,
+    yellow,
+    green,
+    sky_blue,
+    blue,
+    purple,
+    red,
+    yellow,
+    green,
+    sky_blue,
+    blue,
+    purple
+  },
+  .num_colors = 18
+};
+
 //the primary colors red, blue and yellow:
-const rainbow r3 = {
+const rainbow r6 = {
   .colors = { 
     red,
     off,
@@ -116,7 +140,7 @@ const rainbow r3 = {
 };
 
 //the secondary colors orange, green and purple:
-const rainbow r4 = {
+const rainbow r7 = {
   .colors = { 
     off,
     orange,
@@ -129,7 +153,7 @@ const rainbow r4 = {
 };
 
 //red green and blue
-const rainbow r5 = {
+const rainbow r8 = {
   .colors = { 
     off,
     red,
@@ -142,7 +166,7 @@ const rainbow r5 = {
 };
 
 //blue and yellow
-const rainbow r6 = {
+const rainbow r9 = {
   .colors = { 
     off,
     yellow,
@@ -157,7 +181,7 @@ const rainbow r6 = {
 };
 
 //red and sky_blue
-const rainbow r7 = {
+const rainbow r10 = {
   .colors = { 
     off,
     red,
@@ -172,7 +196,7 @@ const rainbow r7 = {
 };
 
 //Orange and deep_blue
-const rainbow r8 = {
+const rainbow r11 = {
   .colors = { 
     off,
     orange,
@@ -187,7 +211,7 @@ const rainbow r8 = {
 };
 
 //blue and white pattern
-const rainbow r9 = {
+const rainbow r12 = {
   .colors = { 
     white,
     sky_blue,
@@ -202,7 +226,7 @@ const rainbow r9 = {
 };
 
 //red and white pattern
-const rainbow r10 = {
+const rainbow r13 = {
   .colors = { 
     white,
     Color(127,0,0),
@@ -217,7 +241,7 @@ const rainbow r10 = {
 };
 
 //green and white pattern
-const rainbow r11 = {
+const rainbow r14 = {
   .colors = { 
     white,
     Color(0,127,0),
@@ -231,7 +255,8 @@ const rainbow r11 = {
   .num_colors = 8
 };
 
-const rainbow om1_rb = {
+//red and dark red pattern
+const rainbow r15 = {
   .colors = {
     red, 
     Color(64,0,0), 
@@ -239,13 +264,12 @@ const rainbow om1_rb = {
     Color(64,0,0),
     red, 
     Color(64,0,0),
-    red, 
-    Color(64,0,0)
   },
-  .num_colors = 9
+  .num_colors = 6
 };
 
-const rainbow om2_rb = {
+//yellow and dark yellow pattern
+const rainbow r16 = {
   .colors = {
     yellow, 
     Color(64,64,0),
@@ -253,13 +277,12 @@ const rainbow om2_rb = {
     Color(64,64,0),
     yellow,
     Color(64,64,0),
-    yellow,
-    Color(64,64,0)
   },
-  .num_colors = 8
+  .num_colors = 6
 };
 
-const rainbow om3_rb = {
+//sky blue and dark sky blue pattern
+const rainbow r17 = {
   .colors = {
     sky_blue, 
     Color(0,64,64),
@@ -267,13 +290,12 @@ const rainbow om3_rb = {
     Color(0,64,64),
     sky_blue, 
     Color(0,64,64),
-    sky_blue, 
-    Color(0,64,64)
   },
-  .num_colors = 8
+  .num_colors = 6
 };
 
-const rainbow om4_rb = {
+//purple and dark purple pattern
+const rainbow r18 = {
   .colors = {
     purple, 
     Color(64,0,64),
@@ -281,13 +303,12 @@ const rainbow om4_rb = {
     Color(64,0,64),
     purple, 
     Color(64,0,64),
-    purple, 
-    Color(64,0,64)
   },
-  .num_colors = 8
+  .num_colors = 6
 };
 
-const rainbow om5_rb = {
+//green and dark green pattern
+const rainbow r19 = {
   .colors = {
     green, 
     Color(0,64,0),
@@ -295,13 +316,12 @@ const rainbow om5_rb = {
     Color(0,64,0),
     green, 
     Color(0,64,0),
-    green, 
-    Color(0,64,0)
   },
-  .num_colors = 8
+  .num_colors = 6
 };
 
-const rainbow om6_rb = {
+//blue and dark blue pattern
+const rainbow r20 = {
   .colors = {
     blue, 
     Color(0,0,64),
@@ -309,26 +329,32 @@ const rainbow om6_rb = {
     Color(0,0,64),
     blue, 
     Color(0,0,64),
-    blue, 
-    Color(0,0,64)
   },
-  .num_colors = 8
+  .num_colors = 6
 };
 
-const rainbow marquee_rb = {
+//white and grey pattern
+const rainbow r21 = {
   .colors = {
-    Color(255,255,255),
+    white,
+    Color(64,64,64),
+    white,
+    Color(64,64,64),
+    white,
     Color(64,64,64)
   },
-  .num_colors = 2
+  .num_colors = 6
 };
 
-const rainbow trigger_rb = {
+//dark grey single color rainbow
+const rainbow r22 = {
   .colors = {
-    Color(255,255,255),
-    Color(64,64,64)
+    Color(32,32,32)
   },
-  .num_colors = 2
+  .num_colors = 1
 };
 
+//this is an array of all the rainbows above for use in whatever lighting animation switchers you have:
+const uint16_t num_rainbows = 23;
+const rainbow rb_array[num_rainbows] = {r_off, r_on, r_vu, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15, r16, r17, r18, r19, r20, r21, r22};
 #endif
