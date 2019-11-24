@@ -15,6 +15,9 @@ Date: 2019-09-29
 //comment this to disable lighting debug messages over serial
 #define LIGHTING_DEBUG
 
+//comment this out to disable trigger event debug messages
+//#define TRIGGER_DEBUG
+
 /*
 Lighting Mode Overview:
 
@@ -170,29 +173,34 @@ To summarize:
 
 //some default values for various animation modes:
 
-//this is the default refresh rate for the animations in ms between frames. 33 ~= 30Hz, 16 ~= 60Hz.
-#define LC_DEFAULT_REFRESH_RATE 33
+//this is the default refresh rate for the animations in ms between frames. 33 ~= 30Hz, 22 ~= 45Hz, 16 ~= 60Hz.
+#define LC_DEFAULT_REFRESH_RATE 22
 
 //Variables for the number of frames per animation:
 //this is how many frames to go from one color to the next, not through the whole rainbow.
 #define LC_SLOW_FADE_FRAMES 100
 
 //this is how many frames for the entire cycle to repeat, i.e. the first dot returns to the origin
-#define LC_MARQUEE_FRAMES 80
+#define LC_MARQUEE_FRAMES 150
 
 //this is how many frames to rotate fully through the entire led_array and get back to the beginning position.
 #define LC_RAINBOW_SLOW_ROTATE_FRAMES 300
 
-//this is how long for one color shot to go from its origin to the end of the strip.
-#define LC_COLOR_SHOT_FRAMES 30
-
-//this is how many frames each color pulse fades to its maximum brightness.
-#define LC_COLOR_PULSE_FADE_IN_FRAMES 10
-//this is how many frames for a color pulse to fade back out to black.
-#define LC_COLOR_PULSE_FADE_OUT_FRAMES 30
-
 //this is how many frames to fade colors on a trigger event using slow fade
 #define LC_TRIGGER_SLOW_FADE_FRAMES 100
+
+//this is how long for one color shot to go from its origin to the end of the strip.
+#define LC_COLOR_SHOT_FRAMES 15
+
+//this is how many frames each color pulse fades to its maximum brightness.
+#define LC_COLOR_PULSE_FADE_IN_FRAMES 1
+//this is how many frames for a color pulse to fade back out to black.
+#define LC_COLOR_PULSE_FADE_OUT_FRAMES 10
+
+//this is how many frames each flash will fade to its maximum brightness.
+#define LC_FLASH_FADE_IN_FRAMES 1
+//this is how many frames for a flash to fade out to black.
+#define LC_FLASH_FADE_OUT_FRAMES 10
 
 //a couple defines for marquee proportions generation
 //these look better if (LC_MARQUEE_ON+LC_MARQUEE_OFF)*LC_MARQUEE_SUBDIVISIONS is the same as the number of your LEDs. 

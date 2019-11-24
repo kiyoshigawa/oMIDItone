@@ -6,7 +6,7 @@
 #include <Arduino.h>
 
 //this is the most colors a single rainbow can have
-#define MAX_RAINBOW_COLORS 20
+#define MAX_RAINBOW_COLORS 12
 
 //a structure for holding rainbows called rainbow:
 struct rainbow {
@@ -52,6 +52,97 @@ const rainbow r_on = {
   .num_colors = 1
 };
 
+const rainbow r_red = {
+  .colors = {
+    red
+  },
+  .num_colors = 1
+};
+
+const rainbow r_orange = {
+  .colors = {
+    orange
+  },
+  .num_colors = 1
+};
+
+const rainbow r_yellow = {
+  .colors = {
+    yellow
+  },
+  .num_colors = 1
+};
+
+const rainbow r_yellow_green = {
+  .colors = {
+    yellow_green
+  },
+  .num_colors = 1
+};
+
+const rainbow r_green = {
+  .colors = {
+    green
+  },
+  .num_colors = 1
+};
+
+const rainbow r_green_blue = {
+  .colors = {
+    green_blue
+  },
+  .num_colors = 1
+};
+
+const rainbow r_sky_blue = {
+  .colors = {
+    sky_blue
+  },
+  .num_colors = 1
+};
+
+const rainbow r_deep_blue = {
+  .colors = {
+    deep_blue
+  },
+  .num_colors = 1
+};
+
+const rainbow r_blue = {
+  .colors = {
+    blue
+  },
+  .num_colors = 1
+};
+
+const rainbow r_purple_blue = {
+  .colors = {
+    purple_blue
+  },
+  .num_colors = 1
+};
+
+const rainbow r_purple = {
+  .colors = {
+    purple
+  },
+  .num_colors = 1
+};
+
+const rainbow r_dark_purple = {
+  .colors = {
+    dark_purple
+  },
+  .num_colors = 1
+};
+
+const rainbow r_dark_grey = {
+  .colors = {
+    Color(32,32,32)
+  },
+  .num_colors = 1
+};
+
 //recommended for use with LC_FG_VU_METER modes on a LightingControl setup, but not required.
 //Adjust the ratio of green to yellow to red to your liking.
 const rainbow r_vu = {
@@ -69,8 +160,100 @@ const rainbow r_vu = {
   .num_colors = 9
 };
 
+
+//red and dark red pattern
+const rainbow r_dark_red_pattern = {
+  .colors = {
+    Color(127,0,0), 
+    Color(64,0,0), 
+    Color(127,0,0), 
+    Color(64,0,0),
+    Color(127,0,0), 
+    Color(64,0,0),
+  },
+  .num_colors = 6
+};
+
+//yellow and dark yellow pattern
+const rainbow r_dark_yellow_pattern = {
+  .colors = {
+    Color(127,127,0), 
+    Color(64,64,0),
+    Color(127,127,0), 
+    Color(64,64,0),
+    Color(127,127,0),
+    Color(64,64,0),
+  },
+  .num_colors = 6
+};
+
+//sky blue and dark sky blue pattern
+const rainbow r_dark_sky_blue_pattern = {
+  .colors = {
+    Color(0,127,127), 
+    Color(0,64,64),
+    Color(0,127,127), 
+    Color(0,64,64),
+    Color(0,127,127), 
+    Color(0,64,64),
+  },
+  .num_colors = 6
+};
+
+//purple and dark purple pattern
+const rainbow r_dark_purple_pattern = {
+  .colors = {
+    Color(127,0,127), 
+    Color(64,0,64),
+    Color(127,0,127), 
+    Color(64,0,64),
+    Color(127,0,127), 
+    Color(64,0,64),
+  },
+  .num_colors = 6
+};
+
+//green and dark green pattern
+const rainbow r_dark_green_pattern = {
+  .colors = {
+    Color(0,127,0), 
+    Color(0,64,0),
+    Color(0,127,0), 
+    Color(0,64,0),
+    Color(0,127,0), 
+    Color(0,64,0),
+  },
+  .num_colors = 6
+};
+
+//blue and dark blue pattern
+const rainbow r_dark_blue_pattern = {
+  .colors = {
+    Color(0,0,127), 
+    Color(0,0,64),
+    Color(0,0,127), 
+    Color(0,0,64),
+    Color(0,0,127), 
+    Color(0,0,64),
+  },
+  .num_colors = 6
+};
+
+//white and grey pattern
+const rainbow r_white_grey_pattern = {
+  .colors = {
+    white,
+    Color(64,64,64),
+    white,
+    Color(64,64,64),
+    white,
+    Color(64,64,64)
+  },
+  .num_colors = 6
+};
+
 //this is the traditional roygbiv rainbow pattern
-const rainbow r3 = {
+const rainbow r_roygbiv = {
   .colors = {
     red,
     yellow,
@@ -83,7 +266,7 @@ const rainbow r3 = {
 };
 
 //rainbow is a double rainbow of r3
-const rainbow r4 = {
+const rainbow r_double_roygbiv = {
   .colors = { 
     red,
     yellow,
@@ -101,33 +284,8 @@ const rainbow r4 = {
   .num_colors = 12
 };
 
-//rainbow is a triple rainbow of r3
-const rainbow r5 = {
-  .colors = { 
-    red,
-    yellow,
-    green,
-    sky_blue,
-    blue,
-    purple,
-    red,
-    yellow,
-    green,
-    sky_blue,
-    blue,
-    purple,
-    red,
-    yellow,
-    green,
-    sky_blue,
-    blue,
-    purple
-  },
-  .num_colors = 18
-};
-
 //the primary colors red, blue and yellow:
-const rainbow r6 = {
+const rainbow r_rby = {
   .colors = { 
     red,
     off,
@@ -140,7 +298,7 @@ const rainbow r6 = {
 };
 
 //the secondary colors orange, green and purple:
-const rainbow r7 = {
+const rainbow r_ogp = {
   .colors = { 
     off,
     orange,
@@ -153,7 +311,7 @@ const rainbow r7 = {
 };
 
 //red green and blue
-const rainbow r8 = {
+const rainbow r_rgb = {
   .colors = { 
     off,
     red,
@@ -166,7 +324,7 @@ const rainbow r8 = {
 };
 
 //blue and yellow
-const rainbow r9 = {
+const rainbow r_by = {
   .colors = { 
     off,
     yellow,
@@ -181,7 +339,7 @@ const rainbow r9 = {
 };
 
 //red and sky_blue
-const rainbow r10 = {
+const rainbow r_rb = {
   .colors = { 
     off,
     red,
@@ -196,7 +354,7 @@ const rainbow r10 = {
 };
 
 //Orange and deep_blue
-const rainbow r11 = {
+const rainbow r_ob = {
   .colors = { 
     off,
     orange,
@@ -211,7 +369,7 @@ const rainbow r11 = {
 };
 
 //blue and white pattern
-const rainbow r12 = {
+const rainbow r_bw = {
   .colors = { 
     white,
     sky_blue,
@@ -226,7 +384,7 @@ const rainbow r12 = {
 };
 
 //red and white pattern
-const rainbow r13 = {
+const rainbow r_rw = {
   .colors = { 
     white,
     Color(127,0,0),
@@ -241,7 +399,7 @@ const rainbow r13 = {
 };
 
 //green and white pattern
-const rainbow r14 = {
+const rainbow r_gw = {
   .colors = { 
     white,
     Color(0,127,0),
@@ -255,106 +413,42 @@ const rainbow r14 = {
   .num_colors = 8
 };
 
-//red and dark red pattern
-const rainbow r15 = {
-  .colors = {
-    red, 
-    Color(64,0,0), 
-    red, 
-    Color(64,0,0),
-    red, 
-    Color(64,0,0),
-  },
-  .num_colors = 6
-};
-
-//yellow and dark yellow pattern
-const rainbow r16 = {
-  .colors = {
-    yellow, 
-    Color(64,64,0),
-    yellow, 
-    Color(64,64,0),
-    yellow,
-    Color(64,64,0),
-  },
-  .num_colors = 6
-};
-
-//sky blue and dark sky blue pattern
-const rainbow r17 = {
-  .colors = {
-    sky_blue, 
-    Color(0,64,64),
-    sky_blue, 
-    Color(0,64,64),
-    sky_blue, 
-    Color(0,64,64),
-  },
-  .num_colors = 6
-};
-
-//purple and dark purple pattern
-const rainbow r18 = {
-  .colors = {
-    purple, 
-    Color(64,0,64),
-    purple, 
-    Color(64,0,64),
-    purple, 
-    Color(64,0,64),
-  },
-  .num_colors = 6
-};
-
-//green and dark green pattern
-const rainbow r19 = {
-  .colors = {
-    green, 
-    Color(0,64,0),
-    green, 
-    Color(0,64,0),
-    green, 
-    Color(0,64,0),
-  },
-  .num_colors = 6
-};
-
-//blue and dark blue pattern
-const rainbow r20 = {
-  .colors = {
-    blue, 
-    Color(0,0,64),
-    blue, 
-    Color(0,0,64),
-    blue, 
-    Color(0,0,64),
-  },
-  .num_colors = 6
-};
-
-//white and grey pattern
-const rainbow r21 = {
-  .colors = {
-    white,
-    Color(64,64,64),
-    white,
-    Color(64,64,64),
-    white,
-    Color(64,64,64)
-  },
-  .num_colors = 6
-};
-
-//dark grey single color rainbow
-const rainbow r22 = {
-  .colors = {
-    Color(32,32,32)
-  },
-  .num_colors = 1
-};
-
 //this is an array of all the rainbows above for use in whatever lighting animation switchers you have:
-const uint16_t num_rainbows = 23;
-const rainbow rb_array[num_rainbows] = {r_off, r_on, r_vu, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15, r16, r17, r18, r19, r20, r21, r22};
+const uint16_t num_rainbows = 34;
+const rainbow rb_array[num_rainbows] = {r_off,                    //0
+                                        r_on,                     //1
+                                        r_vu,                     //2
+                                        r_red,                    //3
+                                        r_orange,                 //4
+                                        r_yellow,                 //5
+                                        r_yellow_green,           //6
+                                        r_green,                  //7
+                                        r_green_blue,             //8
+                                        r_sky_blue,               //9
+                                        r_deep_blue,              //10
+                                        r_blue,                   //11
+                                        r_purple_blue,            //12
+                                        r_purple,                 //13
+                                        r_dark_purple,            //14
+                                        r_dark_grey,              //15
+                                        r_dark_red_pattern,       //16
+                                        r_dark_yellow_pattern,    //17
+                                        r_dark_sky_blue_pattern,  //18
+                                        r_dark_purple_pattern,    //19
+                                        r_dark_green_pattern,     //20
+                                        r_dark_blue_pattern,      //21
+                                        r_white_grey_pattern,     //22
+                                        r_roygbiv,                //23
+                                        r_double_roygbiv,         //24
+                                        r_rby,                    //25
+                                        r_ogp,                    //26
+                                        r_rgb,                    //27
+                                        r_by,                     //28
+                                        r_rb,                     //29
+                                        r_ob,                     //30
+                                        r_bw,                     //31
+                                        r_rw,                     //32
+                                        r_gw,                     //33
+                                       };
+
 #endif

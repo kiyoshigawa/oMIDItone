@@ -49,25 +49,26 @@ void _softRestart()
 //these are default lighting info for the heads:
 #define DEFAULT_BG_MODE LC_BG_RAINBOW_SLOW_ROTATE
 #define DEFAULT_FG_MODE LC_FG_NONE
-#define DEFAULT_TRIGGER_MODE LC_TRIGGER_COLOR_PULSE
-#define DEFAULT_OM1_BG_RAINBOW 15
-#define DEFAULT_OM2_BG_RAINBOW 16
-#define DEFAULT_OM3_BG_RAINBOW 17
-#define DEFAULT_OM4_BG_RAINBOW 18
-#define DEFAULT_OM5_BG_RAINBOW 19
-#define DEFAULT_OM6_BG_RAINBOW 20
-#define DEFAULT_OM1_FG_RAINBOW 21
-#define DEFAULT_OM2_FG_RAINBOW 21
-#define DEFAULT_OM3_FG_RAINBOW 21
-#define DEFAULT_OM4_FG_RAINBOW 21
-#define DEFAULT_OM5_FG_RAINBOW 21
-#define DEFAULT_OM6_FG_RAINBOW 21
-#define DEFAULT_OM1_TRIGGER_RAINBOW 21
-#define DEFAULT_OM2_TRIGGER_RAINBOW 21
-#define DEFAULT_OM3_TRIGGER_RAINBOW 21
-#define DEFAULT_OM4_TRIGGER_RAINBOW 21
-#define DEFAULT_OM5_TRIGGER_RAINBOW 21
-#define DEFAULT_OM6_TRIGGER_RAINBOW 21
+#define DEFAULT_TRIGGER_MODE LC_TRIGGER_FLASH
+
+#define DEFAULT_OM1_BG_RAINBOW 16
+#define DEFAULT_OM2_BG_RAINBOW 17
+#define DEFAULT_OM3_BG_RAINBOW 18
+#define DEFAULT_OM4_BG_RAINBOW 19
+#define DEFAULT_OM5_BG_RAINBOW 20
+#define DEFAULT_OM6_BG_RAINBOW 21
+#define DEFAULT_OM1_FG_RAINBOW 1
+#define DEFAULT_OM2_FG_RAINBOW 1
+#define DEFAULT_OM3_FG_RAINBOW 1
+#define DEFAULT_OM4_FG_RAINBOW 1
+#define DEFAULT_OM5_FG_RAINBOW 1
+#define DEFAULT_OM6_FG_RAINBOW 1
+#define DEFAULT_OM1_TRIGGER_RAINBOW 3
+#define DEFAULT_OM2_TRIGGER_RAINBOW 5
+#define DEFAULT_OM3_TRIGGER_RAINBOW 9
+#define DEFAULT_OM4_TRIGGER_RAINBOW 13
+#define DEFAULT_OM5_TRIGGER_RAINBOW 7
+#define DEFAULT_OM6_TRIGGER_RAINBOW 11
 
 // Pin and other head-specific Definitions
 //om#_leds[] arrays are per head ordered from left to right, the first 6 are front leds, the next 6 are the back top, and the final 6 are the back bottom leds
@@ -246,7 +247,13 @@ int head_offset = 0;
 bool lighting_is_enabled = true;
 
 //this controls whether note on messages send triggers to the head that plays the note:
-bool note_trigger_is_enabled = false;
+bool note_trigger_is_enabled = true;
+
+//this is an array that is sorted in the order of the least recently used heads to the most recently used heads
+//it allows for the least recently used heads to be selected first when deciding whish head will play a note
+uint8_t head_order_array[NUM_OMIDITONES];
+//this stores the state of the head order array until all notes are off, then it is pushed into the actual head order array.
+uint8_t pending_head_order_array[NUM_OMIDITONES];
 
 //Start the hardware MIDI:
 MIDI_CREATE_INSTANCE(HardwareSerial, Serial1, MIDI);
@@ -333,20 +340,25 @@ void remove_note(uint8_t note){
     }
   }
 
-  //and finally change the head offset only after all notes have stopped to preserve long notes on the same head.
+  //and finally change the head_order_array to match the pending_head_order_array when all notes are off
   if(num_current_notes <= 0){
-    head_offset++;
-    if(head_offset >= NUM_OMIDITONES){
-      head_offset = 0;
+    for(int i=0; i<NUM_OMIDITONES; i++){
+      head_order_array[i] = pending_head_order_array[i];
     }
   }
 }
 
-//this will trigger a lighting event on the oMIDItone because it has been selected to play a note.
-void trigger_head_lighting_event(oMIDItone * om){
-  om->animation->trigger_event(LC_TRIGGER_COLOR_PULSE);
-  om->animation->trigger_event(LC_TRIGGER_FG);
-  om->animation->trigger_event(LC_TRIGGER_BG);
+//this function moves the head in question to the end of the head_order_array, and shuffles the remaining heads down into its place.
+void pending_head_order_to_end(uint8_t head_number){
+  //don't need to iterate to the last one, because if the head_number is in the last position already, we're good
+  for(int i=0; i<NUM_OMIDITONES-1; i++){
+    if(pending_head_order_array[i] == head_number){
+      //set the current position to the next head in line
+      pending_head_order_array[i] = pending_head_order_array[i+1];
+      //and move the head in question down the line until it's in the last place
+      pending_head_order_array[i+1] = head_number;
+    }
+  }
 }
 
 //this is a function to send commands to the oMIDItones connected to this controller based on the note_status_array and current_pitch_shift
@@ -366,17 +378,9 @@ void update_oMIDItones(){
   if(note_has_changed){
     //we need a couple variables that we can use to iterate through all the heads in the right order.
     bool head_state[NUM_OMIDITONES];
-    uint8_t head_order_array[NUM_OMIDITONES];
-    //this should make an offset array with the numbers 0-6 in order based on the head_offset
     for(int i=0; i<NUM_OMIDITONES; i++){
       //mark all heads as available initially
       head_state[i] = AVAILABLE;
-      //assign the order with an offset
-      head_order_array[i] = i+head_offset;
-      //correct the offset to be less than NUM_OMIDITONES if it's too large
-      if(head_order_array[i] >= NUM_OMIDITONES){
-        head_order_array[i] = head_order_array[i] - NUM_OMIDITONES;
-      }
     }
     //only do this if there are notes to be played.
     if(num_current_notes > 0){
@@ -392,10 +396,12 @@ void update_oMIDItones(){
               oms[head_order_array[h]].note_on(current_note_array[n], current_velocity_array[n], current_channel_array[n]);
               //trigger a lighting update on the head
               if(note_trigger_is_enabled){
-                trigger_head_lighting_event(&oms[head_order_array[h]]);
+                oms[head_order_array[h]].animation->trigger_event(note_trigger_type[head_order_array[h]]);
               }
               //remove the head from the unassigned heads array
               head_state[h] = NOT_AVAILABLE;
+              //move the head to the end of the head_order_array
+              pending_head_order_to_end(head_order_array[h]);
               #ifdef DEBUG
                 Serial.print("Head ");
                 Serial.print(head_order_array[h]);
@@ -427,7 +433,13 @@ void setup(){
     Serial.println("Welcome to oMIDItone.");
     Serial.println("Beginning initialization - this may take several minutes...");
   #endif
-  
+
+  //initialize the head order array and pending_head_order_array to be 0-5 in order:
+  for(int i=0; i<NUM_OMIDITONES; i++){
+    head_order_array[i] = i;
+    pending_head_order_array[i] = i;
+  }
+
   //set up the lighting controller with the animations
   lc.init();
   for(int i=0; i<NUM_OMIDITONES; i++){

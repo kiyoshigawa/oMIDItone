@@ -193,7 +193,7 @@ void Animation::trigger_event(uint16_t trigger_type){
   else if(trigger_type == LC_TRIGGER_COLOR_PULSE){
     //make a new solid color pulse of the current trigger rainbow color and add it to the current_trigger_events array.
     TriggerEvent new_pulse = {
-      .type = LC_TRIGGER_COLOR_PULSE,
+      .type = trigger_type,
       .total_frames = LC_COLOR_PULSE_FADE_IN_FRAMES + LC_COLOR_PULSE_FADE_OUT_FRAMES,
       .current_frame = 0,
       .color = trigger_rainbow.colors[current_trigger_rainbow_color],
@@ -207,7 +207,7 @@ void Animation::trigger_event(uint16_t trigger_type){
     //make a new color pulse of the offset current trigger_rainbow color based on current_frame and add it to the current_trigger_events array.
     uint32_t adjusted_color = slow_fade_color_adjust(trigger_rainbow, current_trigger_rainbow_color, current_trigger_fade_frame, total_trigger_fade_frames);
     TriggerEvent new_pulse = {
-      .type = LC_TRIGGER_COLOR_PULSE,
+      .type = trigger_type,
       .total_frames = LC_COLOR_PULSE_FADE_IN_FRAMES + LC_COLOR_PULSE_FADE_OUT_FRAMES,
       .current_frame = 0,
       .color = adjusted_color,
@@ -220,7 +220,7 @@ void Animation::trigger_event(uint16_t trigger_type){
   else if(trigger_type == LC_TRIGGER_COLOR_PULSE_RAINBOW){
     //make a new color pulse of the current trigger_rainbow color and add it to the current_trigger_events array and increment the trigger_rainbow color.
     TriggerEvent new_pulse = {
-      .type = LC_TRIGGER_COLOR_PULSE,
+      .type = trigger_type,
       .total_frames = LC_COLOR_PULSE_FADE_IN_FRAMES + LC_COLOR_PULSE_FADE_OUT_FRAMES,
       .current_frame = 0,
       .color = trigger_rainbow.colors[current_trigger_rainbow_color],
@@ -233,22 +233,85 @@ void Animation::trigger_event(uint16_t trigger_type){
   }
   else if(trigger_type == LC_TRIGGER_COLOR_SHOT){
     //make a new solid color shot of the current trigger rainbow color and add it to the current_trigger_events array.
+    TriggerEvent new_shot = {
+      .type = trigger_type,
+      .total_frames = LC_COLOR_SHOT_FRAMES,
+      .current_frame = 0,
+      .color = trigger_rainbow.colors[current_trigger_rainbow_color],
+      .offset = LC_DEFAULT_SHOT_POSITION,
+      .last_update = 0,
+      .event_has_completed = false
+    };
+    add_trigger_event(new_shot);
   }
   else if(trigger_type == LC_TRIGGER_COLOR_SHOT_SLOW_FADE){
     //make a new color shot of the offset current trigger_rainbow color based on current_frame and add it to the current_trigger_events array.
+    uint32_t adjusted_color = slow_fade_color_adjust(trigger_rainbow, current_trigger_rainbow_color, current_trigger_fade_frame, total_trigger_fade_frames);
+    TriggerEvent new_shot = {
+      .type = trigger_type,
+      .total_frames = LC_COLOR_SHOT_FRAMES,
+      .current_frame = 0,
+      .color = adjusted_color,
+      .offset = LC_DEFAULT_SHOT_POSITION,
+      .last_update = 0,
+      .event_has_completed = false
+    };
+    add_trigger_event(new_shot);
   }
   else if(trigger_type == LC_TRIGGER_COLOR_SHOT_RAINBOW){
     //make a new color shot of the current trigger_rainbow color and add it to the current_trigger_events array and increment the trigger_rainbow color.
     increment_trigger_rainbow();
+    TriggerEvent new_shot = {
+      .type = trigger_type,
+      .total_frames = LC_COLOR_SHOT_FRAMES,
+      .current_frame = 0,
+      .color = trigger_rainbow.colors[current_trigger_rainbow_color],
+      .offset = LC_DEFAULT_SHOT_POSITION,
+      .last_update = 0,
+      .event_has_completed = false
+    };
+    add_trigger_event(new_shot);
+    increment_trigger_rainbow();
   }
   else if(trigger_type == LC_TRIGGER_FLASH){
     //make a new solid color flash the current trigger rainbow color and add it to the current_trigger_events array.
+    TriggerEvent new_flash = {
+      .type = trigger_type,
+      .total_frames = LC_FLASH_FADE_IN_FRAMES + LC_FLASH_FADE_OUT_FRAMES,
+      .current_frame = 0,
+      .color = trigger_rainbow.colors[current_trigger_rainbow_color],
+      .offset = 0,
+      .last_update = 0, /* not needed for flashes */
+      .event_has_completed = false
+    };
+    add_trigger_event(new_flash);
   }
   else if(trigger_type == LC_TRIGGER_FLASH_SLOW_FADE){
     //make a new flash of the offset current trigger_rainbow color based on current_frame and add it to the current_trigger_events array.
+    uint32_t adjusted_color = slow_fade_color_adjust(trigger_rainbow, current_trigger_rainbow_color, current_trigger_fade_frame, total_trigger_fade_frames);
+    TriggerEvent new_flash = {
+      .type = trigger_type,
+      .total_frames = LC_FLASH_FADE_IN_FRAMES + LC_FLASH_FADE_OUT_FRAMES,
+      .current_frame = 0,
+      .color = adjusted_color,
+      .offset = 0, /* not needed for flashes */
+      .last_update = 0,
+      .event_has_completed = false
+    };
+    add_trigger_event(new_flash);
   }
   else if(trigger_type == LC_TRIGGER_FLASH_RAINBOW){
     //make a new flash of the current trigger_rainbow color and add it to the current_trigger_events array and increment the trigger_rainbow color.
+    TriggerEvent new_flash = {
+      .type = trigger_type,
+      .total_frames = LC_FLASH_FADE_IN_FRAMES + LC_FLASH_FADE_OUT_FRAMES,
+      .current_frame = 0,
+      .color = trigger_rainbow.colors[current_trigger_rainbow_color],
+      .offset = 0, /* not needed for flashes */
+      .last_update = 0,
+      .event_has_completed = false
+    };
+    add_trigger_event(new_flash);
     increment_trigger_rainbow();
   }
 }
@@ -285,32 +348,44 @@ void Animation::update_trigger_animations(){
   if(num_trigger_events > 0){
     for(int i=0; i<num_trigger_events; i++){
       //do the update based on the type of trigger event.
-      if(current_trigger_events[i].type == LC_TRIGGER_COLOR_PULSE){
-        //do something
+      //once created, the color will not change anymore, so the animations can all be carried out together for each type
+      if(current_trigger_events[i].type == LC_TRIGGER_COLOR_PULSE ||
+         current_trigger_events[i].type == LC_TRIGGER_COLOR_PULSE_SLOW_FADE ||
+         current_trigger_events[i].type == LC_TRIGGER_COLOR_PULSE_RAINBOW ){
+        //animate a color pulse at the correct offset based on the current_frames for the event.
       }
-      else if(current_trigger_events[i].type == LC_TRIGGER_COLOR_PULSE_SLOW_FADE){
-        //do something
+      else if(current_trigger_events[i].type == LC_TRIGGER_COLOR_SHOT ||
+              current_trigger_events[i].type == LC_TRIGGER_COLOR_SHOT_SLOW_FADE ||
+              current_trigger_events[i].type == LC_TRIGGER_COLOR_SHOT_RAINBOW ){
+        //animate a color shot at the correct offset based on the current_frames for the event.
       }
-      else if(current_trigger_events[i].type == LC_TRIGGER_COLOR_PULSE_RAINBOW){
-        //do something
-      }
-      else if(current_trigger_events[i].type == LC_TRIGGER_COLOR_SHOT){
-        //do something
-      }
-      else if(current_trigger_events[i].type == LC_TRIGGER_COLOR_SHOT_SLOW_FADE){
-        //do something
-      }
-      else if(current_trigger_events[i].type == LC_TRIGGER_COLOR_SHOT_RAINBOW){
-        //do something
-      }
-      else if(current_trigger_events[i].type == LC_TRIGGER_FLASH){
-        //do something
-      }
-      else if(current_trigger_events[i].type == LC_TRIGGER_FLASH_SLOW_FADE){
-        //do something
-      }
-      else if(current_trigger_events[i].type == LC_TRIGGER_FLASH_RAINBOW){
-        //do something
+      else if(current_trigger_events[i].type == LC_TRIGGER_FLASH ||
+              current_trigger_events[i].type == LC_TRIGGER_FLASH_SLOW_FADE ||
+              current_trigger_events[i].type == LC_TRIGGER_FLASH_RAINBOW ){
+        //flash all LEDs with an overlayed color based on the current_frames for the event.
+        //depending on fade_in or fade_out behave differently:
+        if(current_trigger_events[i].current_frame <= LC_FLASH_FADE_IN_FRAMES){
+          //fade in the color as an overlay on all pixels:
+          for(uint16_t led=0; led<num_leds; led++){
+            uint32_t intermediate_color = color_map(current_trigger_events[i].current_frame, 
+                                                    0, 
+                                                    LC_FLASH_FADE_IN_FRAMES, 
+                                                    led_color_array[led], 
+                                                    current_trigger_events[i].color);
+            led_color_array[led] = intermediate_color;
+          }
+        }
+        else{
+          //fade out the color as an overlay on all pixels:
+          for(uint16_t led=0; led<num_leds; led++){
+            uint32_t intermediate_color = color_map(current_trigger_events[i].current_frame, 
+                                                    LC_FLASH_FADE_IN_FRAMES, 
+                                                    current_trigger_events[i].total_frames, 
+                                                    current_trigger_events[i].color,
+                                                    led_color_array[led]); 
+            led_color_array[led] = intermediate_color;
+          }
+        }
       }
     }
   }
@@ -400,6 +475,15 @@ void Animation::increment_frame(){
     //trigger event flow fades all occur on the same rainbow, so they are tracked together.
     increment_trigger_rainbow();
   }
+
+  //increment all current trigger event frames and clean finished events as needed.
+  for(int i=0; i<num_trigger_events; i++){
+    current_trigger_events[i].current_frame++;
+    if(current_trigger_events[i].current_frame >= current_trigger_events[i].total_frames){
+      current_trigger_events[i].event_has_completed = true;
+    }
+  }
+  clean_trigger_events();
 }
 
 //this will increment the current current_bg_rainbow_color until overflow and then return to color 0
@@ -736,14 +820,14 @@ void Animation::add_trigger_event(TriggerEvent event){
     //add it to the end of the line, and icnrement the array.
     current_trigger_events[num_trigger_events] = event;
     num_trigger_events++;
-    #ifdef LIGHTING_DEBUG
+    #ifdef TRIGGER_DEBUG
       Serial.print("New trigger event added to animation. Currently there are ");
       Serial.print(num_trigger_events);
       Serial.println(" running.");
     #endif
   }
   else{
-    #ifdef LIGHTING_DEBUG
+    #ifdef TRIGGER_DEBUG
       Serial.println("Trigger Event Buffer is Full - New trigger event has not been added.");
     #endif
   }
@@ -760,7 +844,7 @@ void Animation::clean_trigger_events(){
       }
       //decrement the num_trigger_events variable
       num_trigger_events--;
-      #ifdef LIGHTING_DEBUG
+      #ifdef TRIGGER_DEBUG
         Serial.print("Trigger event removed from animation. Currently there are ");
         Serial.print(num_trigger_events);
         Serial.println(" running.");

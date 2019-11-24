@@ -172,6 +172,7 @@ bool oMIDItone::can_play_note(uint16_t note){
     return false;
   }
   else if( (note <= max_note) && (note >= min_note) ){
+    //TIM: Need to add pitch shift check in here to make sure it won't go out of bounds on pitch shifts
     return true;
   }
   else{
