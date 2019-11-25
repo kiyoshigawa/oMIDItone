@@ -49,7 +49,7 @@ void _softRestart()
 //these are default lighting info for the heads:
 #define DEFAULT_BG_MODE LC_BG_RAINBOW_SLOW_ROTATE
 #define DEFAULT_FG_MODE LC_FG_NONE
-#define DEFAULT_TRIGGER_MODE LC_TRIGGER_FLASH
+#define DEFAULT_TRIGGER_MODE LC_TRIGGER_COLOR_PULSE
 
 #define DEFAULT_OM1_BG_RAINBOW 16
 #define DEFAULT_OM2_BG_RAINBOW 17
@@ -391,7 +391,7 @@ void update_oMIDItones(){
         for(int h=0; h<NUM_OMIDITONES; h++){
           //only check the notes if the head hasn't been assigned.
           if(head_state[h] == AVAILABLE){
-            if(oms[head_order_array[h]].can_play_note(current_note_array[n])){
+            if( oms[head_order_array[h]].can_play_note(current_note_array[n], current_pitch_shift[current_channel_array[n]]) ){
               //tell the head to play the note.
               oms[head_order_array[h]].note_on(current_note_array[n], current_velocity_array[n], current_channel_array[n]);
               //trigger a lighting update on the head
@@ -434,6 +434,12 @@ void setup(){
     Serial.println("Beginning initialization - this may take several minutes...");
   #endif
 
+  //initialize the pitch shift to the default value of no pitch shift:
+  for(int i=0; i<NUM_MIDI_CHANNELS; i++){
+    current_pitch_shift[i] = CENTER_PITCH_SHIFT;
+  }
+  pitch_has_changed = true;
+
   //initialize the head order array and pending_head_order_array to be 0-5 in order:
   for(int i=0; i<NUM_OMIDITONES; i++){
     head_order_array[i] = i;
@@ -451,11 +457,6 @@ void setup(){
   for(int i=0; i<NUM_OMIDITONES; i++){
     //init the head
     oms[i].init();
-  }
-
-  //initialize the pitch shift to the default value of no pitch shift:
-  for(int i=0; i<NUM_MIDI_CHANNELS; i++){
-    current_pitch_shift[i] = CENTER_PITCH_SHIFT;
   }
 
   //call out MIDI functions

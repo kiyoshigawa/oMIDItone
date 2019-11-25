@@ -18,7 +18,7 @@ oMIDItone::oMIDItone(uint16_t signal_enable_optoisolator, uint16_t speaker_disab
   servo_is_enabled = SERVO_DEFAULT_ENABLE_STATE;
   pitch_correction_has_been_compromised = false;
   for(int i=0; i<NUM_MIDI_CHANNELS; i++){
-    current_pitch_shift[i] = CENTER_PITCH_SHIFT;
+    current_oMIDItone_pitch_shift[i] = CENTER_PITCH_SHIFT;
   }
   current_resistance = 0;
 
@@ -113,7 +113,7 @@ void oMIDItone::init(){
 //and play notes as needed based on what current_note is set to.
 void oMIDItone::update(){
   //if no note is set, disable the relay and stop checking the current frequency.
-  if(!can_play_note(current_note)){
+  if(!can_play_note(current_note, current_oMIDItone_pitch_shift[current_channel])){
     //turn off the noise.
     digitalWrite(signal_enable_optoisolator_pin, LOW);
   }
@@ -124,8 +124,6 @@ void oMIDItone::update(){
       digitalWrite(signal_enable_optoisolator_pin, HIGH);
     }
     //continuously measure the current frequency and adjust the resistance as needed.
-    //these two functions are now disabled as they cause more harm than good on an ongoing basis.
-    //Might bring back later for non-animated modes to record clean audio.
     if(pitch_correction_is_enabled){
       measure_frequency();
     }
@@ -153,7 +151,7 @@ uint16_t oMIDItone::currently_playing_note(){
 
 //this returns the current pitch shift value.
 uint16_t oMIDItone::currently_playing_pitch_shift(uint16_t channel){
-  return current_pitch_shift[channel];
+  return current_oMIDItone_pitch_shift[channel];
 }
 
 //This will return true if init was successful AND there is no current note playing.
@@ -167,12 +165,16 @@ bool oMIDItone::is_running(){
 }
 
 //This will check if a frequency can be played by an initialized oMIDItone object. freq in us.
-bool oMIDItone::can_play_note(uint16_t note){
+bool oMIDItone::can_play_note(uint8_t note, int16_t pitch_shift){
   if( !had_successful_init ){
     return false;
   }
-  else if( (note <= max_note) && (note >= min_note) ){
-    //TIM: Need to add pitch shift check in here to make sure it won't go out of bounds on pitch shifts
+  else if(note == NO_NOTE){
+    return false;
+  }
+  //note these are measuring us, not actual frequency, so the max note is is the smallest number allowed, and the min note is the biggest
+  //that's why the comparators look backwards
+  else if( (pitch_adjusted_frequency(note, pitch_shift) >= midi_freqs[max_note]) && (pitch_adjusted_frequency(note, pitch_shift) <= midi_freqs[min_note]) ){
     return true;
   }
   else{
@@ -182,7 +184,7 @@ bool oMIDItone::can_play_note(uint16_t note){
 
 //This will tell the oMIDItone to play the note. The note will continue to play until changed or until set to off.
 void oMIDItone::note_on(uint16_t note, uint16_t velocity, uint16_t channel){
-  if(can_play_note(note)){
+  if(can_play_note(note, current_oMIDItone_pitch_shift[channel])){
     //set the current_note:
     note_start_time = 0;
     current_note = note;
@@ -190,10 +192,10 @@ void oMIDItone::note_on(uint16_t note, uint16_t velocity, uint16_t channel){
     current_channel = channel;
     //set the averaging function to the new frequency in anticipation of the change:
     for(int i=0; i<NUM_FREQ_READINGS; i++){
-      recent_freqs[i] = pitch_adjusted_frequency(current_note, current_pitch_shift[channel]);
+      recent_freqs[i] = pitch_adjusted_frequency(current_note, current_oMIDItone_pitch_shift[channel]);
     }
     //set the current_resistance to a value that was previously measured as close to the desired note's frequency.
-    current_resistance = frequency_to_resistance(pitch_adjusted_frequency(current_note, current_pitch_shift[current_channel]));
+    current_resistance = frequency_to_resistance(pitch_adjusted_frequency(current_note, current_oMIDItone_pitch_shift[channel]));
     update();
   }
   else{
@@ -205,8 +207,19 @@ void oMIDItone::note_on(uint16_t note, uint16_t velocity, uint16_t channel){
 }
 
 //this will set the pitch shift value. This will apply to any notes played on the oMIDItone.
-void oMIDItone::set_pitch_shift(int16_t pitch_shift_value, uint16_t pitch_shift_channel){
-    current_pitch_shift[pitch_shift_channel] = pitch_shift_value;
+void oMIDItone::set_pitch_shift(int16_t pitch_shift_value, uint8_t pitch_shift_channel){
+    current_oMIDItone_pitch_shift[pitch_shift_channel] = pitch_shift_value;
+    //update the note if the pitch chift is on the same channel as the currently_playing_note:
+    if(pitch_shift_channel == current_channel){
+      uint32_t adjusted_frequency = pitch_adjusted_frequency(current_note, current_oMIDItone_pitch_shift[current_channel]);
+      //set the averaging function to the new frequency in anticipation of the change:
+      for(int i=0; i<NUM_FREQ_READINGS; i++){
+        recent_freqs[i] = adjusted_frequency;
+      }
+      //set the current_resistance to a value that was previously measured as close to the desired note's frequency.
+      current_resistance = frequency_to_resistance(adjusted_frequency);
+    }
+    update();
 }
 
 //This will set the oMIDItone to stop playing all notes.
@@ -315,21 +328,31 @@ uint16_t oMIDItone::frequency_to_resistance(uint16_t frequency){
 
 //This adjusts a frequency to a pitch-shifted value from the base note.
 //Pitch shift can move uo to two MIDI notes away depending on value of the pitch shift variable.
-uint32_t oMIDItone::pitch_adjusted_frequency(uint16_t note, uint16_t pitch_shift){
+uint32_t oMIDItone::pitch_adjusted_frequency(uint8_t note, int16_t pitch_shift){
   //First the trivial case of CENTER_PITCH_SHIFT:
   if(pitch_shift == CENTER_PITCH_SHIFT){
     return midi_freqs[note];
   }
   else if(pitch_shift < CENTER_PITCH_SHIFT){
     //adjust the pitch down based on the difference between pitch_shift and CENTER_PITCH_SHIFT
+    //TIM: This code is bad and you should feel bad
     uint16_t adjustment_factor = abs(pitch_shift)/8192;
     float frequency_multiplier = 2^(-adjustment_factor/12);
     uint32_t adjusted_frequency = midi_freqs[note]*frequency_multiplier;
+    Serial.print(note);
+    Serial.print(":");
+    Serial.println(pitch_shift);
+    Serial.print(midi_freqs[note]);
+    Serial.print(":");
+    Serial.print(frequency_multiplier);
+    Serial.print(":");
+    Serial.println(adjusted_frequency);
     return adjusted_frequency;
 
   }
   else if(pitch_shift > CENTER_PITCH_SHIFT){
     //adjust the pitch down based on the difference between pitch_shift and CENTER_PITCH_SHIFT
+    //TIM: This code is bad and you should feel bad
     uint16_t adjustment_factor = abs(pitch_shift)/8192;
     float frequency_multiplier = 2^(adjustment_factor/12);
     uint32_t adjusted_frequency = midi_freqs[note]*frequency_multiplier;
@@ -345,7 +368,7 @@ uint32_t oMIDItone::pitch_adjusted_frequency(uint16_t note, uint16_t pitch_shift
 void oMIDItone::measure_frequency(){
   //this first bit is calculating the average continuously and storing it in current_freq
   if(is_rising_edge()){
-    uint32_t currently_desired_freq = pitch_adjusted_frequency(current_note, current_pitch_shift[current_channel]);
+    uint32_t currently_desired_freq = pitch_adjusted_frequency(current_note, current_oMIDItone_pitch_shift[current_channel]);
     //sanity check on the reading - it should never be more than ALLOWABLE_FREQUENCY_READING_VARIANCE percent off of the desired frequency.
     #ifdef PITCH_DEBUG
       Serial.print("LRE: ");
@@ -404,7 +427,7 @@ void oMIDItone::adjust_frequency(){
   if(last_adjust_time > TIME_BETWEEN_FREQUENCY_CORRECTIONS){
     //this determines the allowable range that the frequency can be in to avoid triggering a retune:
     //First adjust for pitch shift if any:
-    uint32_t current_desired_freq = pitch_adjusted_frequency(current_note, current_pitch_shift[current_channel]);
+    uint32_t current_desired_freq = pitch_adjusted_frequency(current_note, current_oMIDItone_pitch_shift[current_channel]);
 
     //this is the range of frequencies acceptable for the current pitch-shifted note being played.
     uint32_t max_allowable_freq = current_desired_freq*(100-ALLOWABLE_NOTE_ERROR)/100;
@@ -415,8 +438,8 @@ void oMIDItone::adjust_frequency(){
     }
     else if(current_freq < max_allowable_freq){
       current_resistance--;
-      //Only correct if the resistance is too low and the pitch is not being shifted downards.
-      if((current_resistance < JITTER) && (current_pitch_shift[current_channel] >= 0)){
+      //Only correct if the resistance is too low
+      if(current_resistance < JITTER){
         //prevent the value from overflowing:
         current_resistance = JITTER;
         //if it's bottoming out, increase the min note.
@@ -442,8 +465,8 @@ void oMIDItone::adjust_frequency(){
     }
     else if(current_freq > min_allowable_freq){
       current_resistance++;
-      //Only correct if the resistance is too high and the pitch is not being shifted upwards.
-      if((current_resistance > (NUM_RESISTANCE_STEPS-JITTER)) && (current_pitch_shift[current_channel] <= 0)){
+      //Only correct if the resistance is too high
+      if(current_resistance > (NUM_RESISTANCE_STEPS-JITTER)){
         //prevent the value from overflowing:
         current_resistance = NUM_RESISTANCE_STEPS-JITTER;
         //if it's topping out, reduce the max note:

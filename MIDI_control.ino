@@ -141,7 +141,7 @@ Otherwise the new modes will not work with the oMIDItone, since they are not exp
 
 //these check to make sure imputs are valid:
 //Head 1 Check:
-bool is_head_1(byte cc_number){
+bool is_head_1(uint8_t cc_number){
   if(
     cc_number == MIDI_CC_OM1_BG_RAINBOW     ||
     cc_number == MIDI_CC_OM1_BG_CHANGE      ||
@@ -160,7 +160,7 @@ bool is_head_1(byte cc_number){
 }
 
 //Head 2 Check:
-bool is_head_2(byte cc_number){
+bool is_head_2(uint8_t cc_number){
   if(
     cc_number == MIDI_CC_OM2_BG_RAINBOW     ||
     cc_number == MIDI_CC_OM2_BG_CHANGE      ||
@@ -179,7 +179,7 @@ bool is_head_2(byte cc_number){
 }
 
 //Head 3 Check:
-bool is_head_3(byte cc_number){
+bool is_head_3(uint8_t cc_number){
   if(
     cc_number == MIDI_CC_OM3_BG_RAINBOW     ||
     cc_number == MIDI_CC_OM3_BG_CHANGE      ||
@@ -198,7 +198,7 @@ bool is_head_3(byte cc_number){
 }
 
 //Head 4 Check:
-bool is_head_4(byte cc_number){
+bool is_head_4(uint8_t cc_number){
   if(
     cc_number == MIDI_CC_OM4_BG_RAINBOW     ||
     cc_number == MIDI_CC_OM4_BG_CHANGE      ||
@@ -217,7 +217,7 @@ bool is_head_4(byte cc_number){
 }
 
 //Head 5 Check:
-bool is_head_5(byte cc_number){
+bool is_head_5(uint8_t cc_number){
   if(
     cc_number == MIDI_CC_OM5_BG_RAINBOW     ||
     cc_number == MIDI_CC_OM5_BG_CHANGE      ||
@@ -236,7 +236,7 @@ bool is_head_5(byte cc_number){
 }
 
 //Head 6 Check:
-bool is_head_6(byte cc_number){
+bool is_head_6(uint8_t cc_number){
   if(
     cc_number == MIDI_CC_OM6_BG_RAINBOW     ||
     cc_number == MIDI_CC_OM6_BG_CHANGE      ||
@@ -255,7 +255,7 @@ bool is_head_6(byte cc_number){
 }
 
 //checks for valid bg animation modes
-bool is_valid_bg(byte cc_value){
+bool is_valid_bg(uint8_t cc_value){
   if(
     cc_value == MIDI_CCV_BG_TYPE_OFF ||
     cc_value == MIDI_CCV_BG_TYPE_SOLID ||
@@ -271,7 +271,7 @@ bool is_valid_bg(byte cc_value){
 }
 
 //checks for valid fg animation modes
-bool is_valid_fg(byte cc_value){
+bool is_valid_fg(uint8_t cc_value){
   if(
     cc_value == MIDI_CCV_FG_TYPE_NONE ||
     cc_value == MIDI_CCV_FG_TYPE_MARQUEE_SOLID ||
@@ -288,7 +288,7 @@ bool is_valid_fg(byte cc_value){
 }
 
 //checks for valid trigger animation modes
-bool is_valid_trigger(byte cc_value){
+bool is_valid_trigger(uint8_t cc_value){
   if(
     cc_value == MIDI_CCV_TR_TYPE_BG ||
     cc_value == MIDI_CCV_TR_TYPE_FG ||
@@ -313,7 +313,7 @@ bool is_valid_trigger(byte cc_value){
 void read_hardware_MIDI(){
   int type, note, velocity, channel, p1, p2, d1, d2, control_number, control_value;
   if (MIDI.read()) {                    // Is there a MIDI message incoming ?
-    byte type = MIDI.getType();
+    uint8_t type = MIDI.getType();
     switch (type) {
       case midi::NoteOn:
         note = MIDI.getData1();
@@ -350,6 +350,7 @@ void read_hardware_MIDI(){
       case midi::PitchBend:
         p1 = MIDI.getData1();
         p2 = MIDI.getData2();
+        channel = MIDI.getChannel();
         //shift the bits so it's a single number from -8192 to 8192.
         current_pitch_shift[channel] = (p2<<7) + p1 - 8192;
         pitch_has_changed = true;
@@ -376,7 +377,7 @@ void read_hardware_MIDI(){
 }
 
 //update the note_status_array to set the requested note as on.
-void OnNoteOn(byte channel, byte note, byte velocity){
+void OnNoteOn(uint8_t channel, uint8_t note, uint8_t velocity){
   if(velocity > 0){
     add_note(note, velocity, channel);
   }
@@ -390,7 +391,7 @@ void OnNoteOn(byte channel, byte note, byte velocity){
 }
 
 //This updated the note_status_array to set the requested note to off:
-void OnNoteOff(byte channel, byte note, byte velocity){
+void OnNoteOff(uint8_t channel, uint8_t note, uint8_t velocity){
   remove_note(note);
   note_has_changed = true;
   #ifdef MIDI_DEBUG
@@ -399,7 +400,7 @@ void OnNoteOff(byte channel, byte note, byte velocity){
 }
 
 //this sets the pitch_shift value to be used by the oMIDItones:
-void OnPitchChange(byte channel, int pitch){
+void OnPitchChange(uint8_t channel, int pitch){
   current_pitch_shift[channel] = pitch;
   pitch_has_changed = true;
   #ifdef MIDI_DEBUG
@@ -412,12 +413,12 @@ void OnPitchChange(byte channel, int pitch){
 }
 
 //this will run control commands for the heads, such as enabling/disabling lighting and servos, as well as changing animation types
-void OnControlChange(byte channel, byte control_number, byte control_value){
+void OnControlChange(uint8_t channel, uint8_t control_number, uint8_t control_value){
   handle_cc(channel, control_number, control_value);
 }
 
 //this interprets the CC messages read by either hardware of USB midi and takes the appropriate action.
-void handle_cc(byte channel, byte cc_number, byte cc_value){
+void handle_cc(uint8_t channel, uint8_t cc_number, uint8_t cc_value){
   //first we change the things that don't need to iterate through each head to be set properly:
 
   //this will disable note trigger events:

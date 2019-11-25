@@ -193,9 +193,9 @@ To summarize:
 #define LC_COLOR_SHOT_FRAMES 15
 
 //this is how many frames each color pulse fades to its maximum brightness.
-#define LC_COLOR_PULSE_FADE_IN_FRAMES 1
+#define LC_COLOR_PULSE_FADE_IN_FRAMES 5
 //this is how many frames for a color pulse to fade back out to black.
-#define LC_COLOR_PULSE_FADE_OUT_FRAMES 10
+#define LC_COLOR_PULSE_FADE_OUT_FRAMES 20
 
 //this is how many frames each flash will fade to its maximum brightness.
 #define LC_FLASH_FADE_IN_FRAMES 1
@@ -248,9 +248,10 @@ struct TriggerEvent{
   int32_t total_frames;
   int32_t current_frame;
   uint32_t color;
-  uint16_t offset;
+  uint32_t offset;
   elapsedMillis last_update;
   bool event_has_completed;
+  bool direction;
 };
 
 //this is a class of object that will generate and keep track of animations on an array of LEDs. 
@@ -330,14 +331,14 @@ class Animation{
     //it wil render the rainbow up to the offset, and leave the background running above the offset
     void fill_vu_meter(uint32_t * led_array, uint16_t num_leds, rainbow rainbow, int32_t origin_offset = LC_DEFAULT_OFFSET);
 
-    //this will update the trigger animations in the current_trigger_events array and render the effected LEDs.
+    //this will update the trigger animations in the active_triggers array and render the effected LEDs.
     //Note the more recent trigger events will override older if there is a conflict.
     void update_trigger_animations();
 
-    //this will add a new trigger animation to the current_trigger_events[] array.
+    //this will add a new trigger animation to the active_triggers[] array.
     void add_trigger_event(TriggerEvent event);
 
-    //this will remove a new trigger animation from the current_trigger_events[] array.
+    //this will remove a new trigger animation from the active_triggers[] array.
     void clean_trigger_events();
 
     //this notes the animation types for the object. 
@@ -401,10 +402,13 @@ class Animation{
     uint16_t color_pulse_fade_out;
 
     //this will be an array of trigger_event structures that control the animations caused by trigger_events.
-    TriggerEvent current_trigger_events[MAX_TRIGGER_EVENTS];
+    TriggerEvent active_triggers[MAX_TRIGGER_EVENTS];
 
-    //this tracks how many trigger events are currently in the current_trigger_events array.
+    //this tracks how many trigger events are currently in the active_triggers array.
     uint16_t num_trigger_events;
+
+    //this tracks the last direction a shot event was fired during an animation so it can send the next one in the other direction.
+    bool last_color_shot_direction;
 };
 
 //this will run animations on an Adafruit_NeoPixel LED strip object. The animations are defined above in the animation class.

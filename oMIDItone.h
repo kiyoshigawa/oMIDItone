@@ -78,10 +78,10 @@ lighting modes and servo animation modes, as well as for direct control if I wan
 //This is the frequency of the note A - typically 440 Hz.
 #define NOTE_A 440
 
-//This is how many MIDI notes there are. It should always be 127
+//This is how many MIDI notes there are. It should always be 127+1 for NO_NOTE
 #define NUM_MIDI_NOTES 128
 
-//This is the number of MIDI channels. Should always be 16, unless MIDI changes sometime in the last decade.
+//This is the number of MIDI channels. Should always be 16, unless MIDI changed sometime in the last decade.
 #define NUM_MIDI_CHANNELS 16
 
 //this is how many resistance steps can be used with the digital pots. The current hardware has 2 digital pots with 256 steps each, for a total of 512.
@@ -175,7 +175,7 @@ class oMIDItone {
     bool is_running();
 
     //This will check if a frequency can be played by an initialized oMIDItone object.
-    bool can_play_note(uint16_t note);
+    bool can_play_note(uint8_t note, int16_t pitch_shift);
 
     //This will tell the oMIDItone to play the note. The note will continue to play until changed or until set to off.
     //note is a MIDI note number. If the note is out of the init value oMIDItone range, it will not play anything.
@@ -185,7 +185,7 @@ class oMIDItone {
     void note_off(uint16_t note);
 
     //this will set the pitch shift value. This will apply to any notes played on the oMIDItone.
-    void set_pitch_shift(int16_t pitch_shift_value, uint16_t pitch_shift_channel);
+    void set_pitch_shift(int16_t pitch_shift_value, uint8_t pitch_shift_channel);
 
     //these enable and disable frequency correction:
     void enable_pitch_correction();
@@ -238,7 +238,7 @@ class oMIDItone {
 
     //This adjusts a frequency to a pitch-shifted value from the base note.
     //Pitch shift can move uo to two MIDI notes away depending on value of the pitch shift variable.
-    uint32_t pitch_adjusted_frequency(uint16_t note, uint16_t pitch_shift);
+    uint32_t pitch_adjusted_frequency(uint8_t note, int16_t pitch_shift);
 
     //this function will find a resistance value that was measured as being very near the desired frequency.
     uint16_t frequency_to_resistance(uint16_t frequency);
@@ -313,7 +313,7 @@ class oMIDItone {
     uint16_t last_analog_read;
 
     //this tracks the current pitch shift for notes on a per-channel basis.
-    uint16_t current_pitch_shift[NUM_MIDI_CHANNELS];
+    int16_t current_oMIDItone_pitch_shift[NUM_MIDI_CHANNELS];
 
     //variable for saving the current resistance value of the digital pots.
     uint16_t current_resistance;
