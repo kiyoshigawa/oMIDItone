@@ -58,6 +58,26 @@ Otherwise the new modes will not work with the oMIDItone, since they are not exp
 //this is used as the default note value for pitsh shift when a CC 121 is sent.
 #define DEFAULT_PITCH_SHIFT 0
 
+//this is used for setting the number of semitones for MIDI pitch bending
+#define MIDI_CC_PITCH_BEND_RANGE_COARSE 6
+//this is used for setting the number of cents off of the semitones above for MIDI pitch bending
+#define MIDI_CC_PITCH_BEND_RANGE_FINE 38
+
+//the pitch bend range will only work if both CC100 and CC101 are set to 0
+#define MIDI_CC_REGISTERED_PARAMETER_LSB 100
+#define MIDI_CC_REGISTERED_PARAMETER_MSB 101
+
+//these are defines used for MIDI RPN messages to determine what type of RPN message is being sent:
+//so far only pitch bend adjust is implemented
+#define MIDI_RPN_PITCH_BEND_ADJUST_MODE 0
+#define MIDI_RPN_FINE_TUNING_MODE 1
+#define MIDI_RPN_COARSE_TUNING_MODE 2
+#define MIDI_RPN_TUNING_PROGRAM_CHANGE_MODE 3
+#define MIDI_RPN_TUNING_BANK_SELECT_MODE 4
+#define MIDI_RPN_MODULATION_DEPTH_RANGE_MODE 5
+
+#define RPN_NO_MODE 127
+
 //this resets the MCU and forces a new tune-up:
 #define MIDI_CC_HARD_RESET 9
 
@@ -138,6 +158,28 @@ Otherwise the new modes will not work with the oMIDItone, since they are not exp
 #define MIDI_CC_OM4_NOTE_TR_CHANGE 117
 #define MIDI_CC_OM5_NOTE_TR_CHANGE 118
 #define MIDI_CC_OM6_NOTE_TR_CHANGE 119
+
+//we need some MIDI global variables to handle regietered parameter messages
+
+//when both RPN values are set to 0, channels 6 and 38 are used for explicitly setting the pitch bend range
+//I have not implemented incrementing or decrementing pitch bending using notes 96 and 97 at this time.
+//Other modes supported by MIDI but not this controller are:
+  //1: fine tuning
+  //2: coarse tuning
+  //3: tuning program change
+  //4: tuning bank select
+  //5: modulation depth range
+uint8_t MIDI_CC_RPN_MSB_value = RPN_NO_MODE;
+uint8_t MIDI_CC_RPN_LSB_value = RPN_NO_MODE;
+
+//this allows me to reset the teensy when it receives a MIDI CC121 reset command.
+#define SCB_AIRCR (*(volatile uint32_t *)0xE000ED0C) // Application Interrupt and Reset Control location
+
+void _softRestart() 
+{
+  Serial.end();  //clears the serial monitor  if used
+  SCB_AIRCR = 0x05FA0004;  //write value for restart
+}
 
 //these check to make sure imputs are valid:
 //Head 1 Check:
@@ -311,9 +353,9 @@ bool is_valid_trigger(uint8_t cc_value){
 
 //This will read the hardware MIDI and set or remove notes as needed.
 void read_hardware_MIDI(){
-  int type, note, velocity, channel, p1, p2, d1, d2, control_number, control_value;
+  uint8_t type, note, velocity, channel, p1, p2, d1, d2, control_number, control_value;
   if (MIDI.read()) {                    // Is there a MIDI message incoming ?
-    uint8_t type = MIDI.getType();
+    type = MIDI.getType();
     switch (type) {
       case midi::NoteOn:
         note = MIDI.getData1();
@@ -354,6 +396,8 @@ void read_hardware_MIDI(){
         //shift the bits so it's a single number from -8192 to 8192.
         current_pitch_shift[channel] = (p2<<7) + p1 - 8192;
         pitch_has_changed = true;
+        //also update any currently playing notes when changing pitch
+        note_has_changed = true;
         #ifdef MIDI_DEBUG
           Serial.print("Pitch Shift set to ");
           Serial.print(current_pitch_shift[channel]);
@@ -369,9 +413,8 @@ void read_hardware_MIDI(){
         handle_cc(channel, control_number, control_value);
         break;
       default:
-        //this just clears the buffers when the stuff isn't used
-        d1 = MIDI.getData1();
-        d2 = MIDI.getData2();
+        //do nothing
+        break;
     }
   } 
 }
@@ -403,6 +446,8 @@ void OnNoteOff(uint8_t channel, uint8_t note, uint8_t velocity){
 void OnPitchChange(uint8_t channel, int pitch){
   current_pitch_shift[channel] = pitch;
   pitch_has_changed = true;
+  //also update any currently playing notes when changing pitch
+  note_has_changed = true;
   #ifdef MIDI_DEBUG
     Serial.print("Pitch Shift set to ");
     Serial.print(current_pitch_shift[channel]);
@@ -421,8 +466,44 @@ void OnControlChange(uint8_t channel, uint8_t control_number, uint8_t control_va
 void handle_cc(uint8_t channel, uint8_t cc_number, uint8_t cc_value){
   //first we change the things that don't need to iterate through each head to be set properly:
 
+  //this will set the globals for the Registered Parameters (RPNs)
+  if(cc_number == MIDI_CC_REGISTERED_PARAMETER_LSB){
+    MIDI_CC_RPN_LSB_value = cc_value;
+    return;
+  }
+  else if(cc_number == MIDI_CC_REGISTERED_PARAMETER_MSB){
+    MIDI_CC_RPN_MSB_value = cc_value;
+    return;
+  }
+  //this changes the pitch bend range when the RPNs are both set to MIDI_RPN_PITCH_BEND_ADJUST_MODE.
+  else if(cc_number == MIDI_CC_PITCH_BEND_RANGE_COARSE){
+    if( (MIDI_CC_RPN_MSB_value == MIDI_RPN_PITCH_BEND_ADJUST_MODE) && (MIDI_CC_RPN_LSB_value == MIDI_RPN_PITCH_BEND_ADJUST_MODE) ){
+      MIDI_pitch_bend_num_semitones = cc_value;
+      pitch_bend_range_has_changed = true;
+      return;
+    }
+    else{
+      #ifdef MIDI_DEBUG
+        Serial.println("MIDI CC100 and CC101 Not set properly for use of CC6.");
+      #endif
+      return;
+    }
+  }
+  else if(cc_number == MIDI_CC_PITCH_BEND_RANGE_FINE){
+    if( (MIDI_CC_RPN_MSB_value == MIDI_RPN_PITCH_BEND_ADJUST_MODE) && (MIDI_CC_RPN_LSB_value == MIDI_RPN_PITCH_BEND_ADJUST_MODE) ){
+      MIDI_pitch_bend_num_cents = cc_value;
+      pitch_bend_range_has_changed = true;
+      return;
+    }
+    else{
+      #ifdef MIDI_DEBUG
+        Serial.println("MIDI CC100 and CC101 Not set properly for use of CC38.");
+      #endif
+      return;
+    }
+  }
   //this will disable note trigger events:
-  if(cc_number == MIDI_CC_NOTE_TRIGGER_ENABLE){
+  else if(cc_number == MIDI_CC_NOTE_TRIGGER_ENABLE){
     //enable for any value other than 0
     if(cc_value){
       note_trigger_is_enabled = true;

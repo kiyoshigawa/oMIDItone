@@ -17,15 +17,6 @@ Update 2019-11-10: Added MIDI functionality to control various aspects of the oM
 #include <Adafruit_NeoPixel.h>
 #include "lighting_control.h"
 
-//this allows me to reset the teensy when it receives a MIDI CC121 reset command.
-#define SCB_AIRCR (*(volatile uint32_t *)0xE000ED0C) // Application Interrupt and Reset Control location
-
-void _softRestart() 
-{
-  Serial.end();  //clears the serial monitor  if used
-  SCB_AIRCR = 0x05FA0004;  //write value for restart
-}
-
 //comment this to disable serial functions for testing notes.
 #define DEBUG
 
@@ -240,6 +231,13 @@ bool note_has_changed = false;
 //this is a bool to let the controller know when it needs to reassign pitch shift to the heads.
 bool pitch_has_changed = false;
 
+//this updates all the heads when MIDI CC pitch bend messages are received:
+bool pitch_bend_range_has_changed = false;
+
+//these globals store the value of the pitch range in semitones and cents
+uint8_t MIDI_pitch_bend_num_semitones = DEFAULT_MIDI_PITCH_BEND_SEMITONES;
+uint8_t MIDI_pitch_bend_num_cents = DEFAULT_MIDI_PITCH_BEND_CENTS;
+
 //This tracks the current head so the iteration isn't always in the same place.
 int head_offset = 0;
 
@@ -373,7 +371,15 @@ void update_oMIDItones(){
     }
     pitch_has_changed = false;
   }
-
+  //this will set the pitch bend range whenever it is changed:
+  if(pitch_bend_range_has_changed){
+    for(int i=0; i<NUM_OMIDITONES; i++){
+      for(int channel=0; channel<NUM_MIDI_CHANNELS; channel++){
+        oms[i].set_pitch_bend(MIDI_pitch_bend_num_semitones, MIDI_pitch_bend_num_cents);
+      }
+    }
+    pitch_bend_range_has_changed = false;
+  }
   //only update if a note has changed state:
   if(note_has_changed){
     //we need a couple variables that we can use to iterate through all the heads in the right order.

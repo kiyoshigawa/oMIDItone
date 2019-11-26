@@ -93,6 +93,12 @@ lighting modes and servo animation modes, as well as for direct control if I wan
 //this is the % difference that a note can be off to trigger correction, as a number from 0-100
 #define ALLOWABLE_NOTE_ERROR 1
 
+//these are the default values for pitch bend range:
+#define DEFAULT_MIDI_PITCH_BEND_SEMITONES 2
+#define DEFAULT_MIDI_PITCH_BEND_CENTS 0
+#define MAX_PITCH_BEND_SEMITONES 96
+#define MAX_PITCH_BEND_CENTS 99
+
 //This is the % off that a frequency reading can be before it's determined to be invalid and thrown out, as a number from 0-100:
 #define ALLOWABLE_FREQUENCY_READING_VARIANCE 50
 
@@ -187,6 +193,10 @@ class oMIDItone {
     //this will set the pitch shift value. This will apply to any notes played on the oMIDItone.
     void set_pitch_shift(int16_t pitch_shift_value, uint8_t pitch_shift_channel);
 
+    //this sets the max pitch bend for the oMIDItone, used when calculating all pitch bends:
+    //pitch will bend to a max of semitones + cents above or below the currently_playing_note frequency based on currently_playing_pitch_shift
+    void set_pitch_bend(uint8_t semitones, uint8_t cents);
+
     //these enable and disable frequency correction:
     void enable_pitch_correction();
     void disable_pitch_correction();
@@ -237,8 +247,8 @@ class oMIDItone {
     void adjust_frequency();
 
     //This adjusts a frequency to a pitch-shifted value from the base note.
-    //Pitch shift can move uo to two MIDI notes away depending on value of the pitch shift variable.
-    uint32_t pitch_adjusted_frequency(uint8_t note, int16_t pitch_shift);
+    //note will vary as a proportion of pitch_shift from -8192 to +8192 up to semitones half-step notes and cents cents max away from the note frequency.
+    uint32_t pitch_adjusted_frequency(uint8_t note, int16_t pitch_shift, uint8_t semitones, uint8_t cents);
 
     //this function will find a resistance value that was measured as being very near the desired frequency.
     uint16_t frequency_to_resistance(uint16_t frequency);
@@ -248,9 +258,6 @@ class oMIDItone {
 
     //This will be set to true if the startup_test was successful:
     bool had_successful_init;
-
-    //This is a variable that tells the program when to check for a note value when the note is on.
-    bool check_note_value;
 
     //this is a variable that controls whether or not frequency correction is enabled:
     bool pitch_correction_is_enabled;
@@ -279,6 +286,8 @@ class oMIDItone {
     //This is an array that has converted the midi_freqs_Hz array into an array of integers representing us between rising edges for the note frequencies
     const uint32_t midi_freqs[NUM_MIDI_NOTES] = {122309, 115446, 108968, 102848, 97077, 91633, 86490, 81632, 77053, 72727, 68643, 64792, 61154, 57723, 54484, 51427, 48538, 45814, 43243, 40816, 38525, 36363, 34322, 32396, 30578, 28861, 27242, 25712, 24270, 22907, 21622, 20408, 19262, 18181, 17161, 16198, 15289, 14430, 13621, 12856, 12134, 11453, 10810, 10204, 9631, 9090, 8580, 8099, 7644, 7215, 6810, 6428, 6067, 5726, 5405, 5102, 4815, 4545, 4290, 4049, 3822, 3607, 3405, 3214, 3033, 2863, 2702, 2551, 2407, 2272, 2145, 2024, 1911, 1803, 1702, 1607, 1516, 1431, 1351, 1275, 1203, 1136, 1072, 1012, 955, 901, 851, 803, 758, 715, 675, 637, 601, 568, 536, 506, 477, 450, 425, 401, 379, 357, 337, 318, 300, 284, 268, 253, 238, 225, 212, 200, 189, 178, 168, 159, 150, 142, 134, 126, 119, 112, 106, 100, 94, 89, 84, 79};
 
+    const uint32_t cent_frequency_ratios[199] = {1058851, 1058240, 1057629, 1057018, 1056408, 1055798, 1055188, 1054579, 1053970, 1053361, 1052753, 1052145, 1051537, 1050930, 1050323, 1049717, 1049111, 1048505, 1047899, 1047294, 1046689, 1046085, 1045481, 1044877, 1044274, 1043671, 1043068, 1042466, 1041864, 1041262, 1040661, 1040060, 1039459, 1038859, 1038259, 1037660, 1037060, 1036462, 1035863, 1035265, 1034667, 1034070, 1033472, 1032876, 1032279, 1031683, 1031087, 1030492, 1029897, 1029302, 1028708, 1028114, 1027520, 1026927, 1026334, 1025741, 1025149, 1024557, 1023965, 1023374, 1022783, 1022192, 1021602, 1021012, 1020423, 1019833, 1019244, 1018656, 1018068, 1017480, 1016892, 1016305, 1015718, 1015132, 1014545, 1013959, 1013374, 1012789, 1012204, 1011619, 1011035, 1010451, 1009868, 1009285, 1008702, 1008120, 1007537, 1006956, 1006374, 1005793, 1005212, 1004632, 1004052, 1003472, 1002892, 1002313, 1001734, 1001156, 1000578, 1000000, 999423, 998845, 998269, 997692, 997116, 996540, 995965, 995390, 994815, 994240, 993666, 993092, 992519, 991946, 991373, 990801, 990228, 989657, 989085, 988514, 987943, 987373, 986803, 986233, 985663, 985094, 984525, 983957, 983388, 982821, 982253, 981686, 981119, 980552, 979986, 979420, 978855, 978289, 977725, 977160, 976596, 976032, 975468, 974905, 974342, 973779, 973217, 972655, 972093, 971532, 970971, 970410, 969850, 969290, 968730, 968171, 967612, 967053, 966494, 965936, 965379, 964821, 964264, 963707, 963151, 962594, 962039, 961483, 960928, 960373, 959818, 959264, 958710, 958157, 957603, 957050, 956498, 955945, 955393, 954842, 954290, 953739, 953188, 952638, 952088, 951538, 950989, 950439, 949891, 949342, 948794, 948246, 947698, 947151, 946604, 946058, 945511, 944965, 944420};
+
     //this is an array of the most recent measured rising edge average times in us that correspond to a resistance
     uint32_t measured_freqs[NUM_RESISTANCE_STEPS];
 
@@ -290,6 +299,15 @@ class oMIDItone {
 
     //This is a variable for storing the most recent frequency reading based on the average of the last NUM_FREQ_READINGS readings
     uint32_t current_freq;
+
+    //this is a variable that stores the current desired frequency including pitch bend modifications
+    //it cuts down on calculating it every time, since pitch bend uses floating point math, which is much slower than the rest of the code
+    uint32_t current_desired_freq;
+
+    //these store the current max values above the note that pitch bend will be able to reach in semitones and cents.
+    //they default to 2 semitones and 0 cents, but can be changed externally
+    uint8_t pitch_bend_semitones;
+    uint8_t pitch_bend_cents;
 
     //this is to measure the frequency of rising edges produced by the output sound wave
     elapsedMicros last_rising_edge;

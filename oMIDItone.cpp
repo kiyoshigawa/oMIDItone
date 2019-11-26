@@ -7,12 +7,14 @@ See the .h file for the writeup, I'll copy it over when it's finished.
 //constructor function
 oMIDItone::oMIDItone(uint16_t signal_enable_optoisolator, uint16_t speaker_disable_optoisolator, uint16_t cs1, uint16_t cs2, uint16_t feedback, uint16_t servo_l_channel, uint16_t servo_r_channel, uint16_t servo_l_min, uint16_t servo_l_max, uint16_t servo_r_min, uint16_t servo_r_max, uint16_t led_head_array[NUM_LEDS_PER_HEAD], Animation * head_animation){
   //Declare default values for variables:
-  check_note_value = false;
   current_note = NO_NOTE;
   min_note = 0;
   max_note = NUM_MIDI_NOTES;
   freq_reading_index = 0;
   current_freq = 0;
+  current_desired_freq = 0;
+  pitch_bend_semitones = DEFAULT_MIDI_PITCH_BEND_SEMITONES;
+  pitch_bend_cents = DEFAULT_MIDI_PITCH_BEND_CENTS;
   last_analog_read = 1024;
   pitch_correction_is_enabled = FREQUENCY_CORRECTION_DEFAULT_ENABLE_STATE;
   servo_is_enabled = SERVO_DEFAULT_ENABLE_STATE;
@@ -166,6 +168,7 @@ bool oMIDItone::is_running(){
 
 //This will check if a frequency can be played by an initialized oMIDItone object. freq in us.
 bool oMIDItone::can_play_note(uint8_t note, int16_t pitch_shift){
+  //some initial conditions to return false immediately before doing the pitch_adjusted_frequency calculation to save time
   if( !had_successful_init ){
     return false;
   }
@@ -174,7 +177,8 @@ bool oMIDItone::can_play_note(uint8_t note, int16_t pitch_shift){
   }
   //note these are measuring us, not actual frequency, so the max note is is the smallest number allowed, and the min note is the biggest
   //that's why the comparators look backwards
-  else if( (pitch_adjusted_frequency(note, pitch_shift) >= midi_freqs[max_note]) && (pitch_adjusted_frequency(note, pitch_shift) <= midi_freqs[min_note]) ){
+  uint32_t desired_frequency = pitch_adjusted_frequency(note, pitch_shift, pitch_bend_semitones, pitch_bend_cents);
+  if( (desired_frequency >= midi_freqs[max_note]) && (desired_frequency <= midi_freqs[min_note]) ){
     return true;
   }
   else{
@@ -192,10 +196,11 @@ void oMIDItone::note_on(uint16_t note, uint16_t velocity, uint16_t channel){
     current_channel = channel;
     //set the averaging function to the new frequency in anticipation of the change:
     for(int i=0; i<NUM_FREQ_READINGS; i++){
-      recent_freqs[i] = pitch_adjusted_frequency(current_note, current_oMIDItone_pitch_shift[channel]);
+      recent_freqs[i] = current_desired_freq;
     }
     //set the current_resistance to a value that was previously measured as close to the desired note's frequency.
-    current_resistance = frequency_to_resistance(pitch_adjusted_frequency(current_note, current_oMIDItone_pitch_shift[channel]));
+    current_desired_freq = pitch_adjusted_frequency(current_note, current_oMIDItone_pitch_shift[current_channel], pitch_bend_semitones, pitch_bend_cents);
+    current_resistance = frequency_to_resistance(current_desired_freq);
     update();
   }
   else{
@@ -211,13 +216,13 @@ void oMIDItone::set_pitch_shift(int16_t pitch_shift_value, uint8_t pitch_shift_c
     current_oMIDItone_pitch_shift[pitch_shift_channel] = pitch_shift_value;
     //update the note if the pitch chift is on the same channel as the currently_playing_note:
     if(pitch_shift_channel == current_channel){
-      uint32_t adjusted_frequency = pitch_adjusted_frequency(current_note, current_oMIDItone_pitch_shift[current_channel]);
+      current_desired_freq = pitch_adjusted_frequency(current_note, current_oMIDItone_pitch_shift[current_channel], pitch_bend_semitones, pitch_bend_cents);
       //set the averaging function to the new frequency in anticipation of the change:
       for(int i=0; i<NUM_FREQ_READINGS; i++){
-        recent_freqs[i] = adjusted_frequency;
+        recent_freqs[i] = current_desired_freq;
       }
       //set the current_resistance to a value that was previously measured as close to the desired note's frequency.
-      current_resistance = frequency_to_resistance(adjusted_frequency);
+      current_resistance = frequency_to_resistance(current_desired_freq);
     }
     update();
 }
@@ -326,41 +331,55 @@ uint16_t oMIDItone::frequency_to_resistance(uint16_t frequency){
   return NUM_RESISTANCE_STEPS-JITTER;
 }
 
+//this sets the max pitch bend for the oMIDItone, used when calculating all pitch bends:
+//pitch will bend to a max of semitones + cents above or below the currently_playing_note frequency based on currently_playing_pitch_shift
+void oMIDItone::set_pitch_bend(uint8_t semitones, uint8_t cents){
+  if(semitones > MAX_PITCH_BEND_SEMITONES){
+    pitch_bend_semitones = MAX_PITCH_BEND_SEMITONES;
+  }
+  else if(semitones <= 0){
+    pitch_bend_semitones = 1;
+  }
+  else{
+    pitch_bend_semitones = semitones;
+  }
+  if(cents > MAX_PITCH_BEND_CENTS){
+    pitch_bend_cents = MAX_PITCH_BEND_CENTS;
+  }
+  else if(cents <= 0){
+    pitch_bend_cents = 1;
+  }
+  else{
+    pitch_bend_cents = cents;
+  }
+}
+
 //This adjusts a frequency to a pitch-shifted value from the base note.
-//Pitch shift can move uo to two MIDI notes away depending on value of the pitch shift variable.
-uint32_t oMIDItone::pitch_adjusted_frequency(uint8_t note, int16_t pitch_shift){
+//note will vary as a proportion of pitch_shift from -8192 to +8192 up to semitones half-step notes and cents cents max away from the note frequency.
+uint32_t oMIDItone::pitch_adjusted_frequency(uint8_t note, int16_t pitch_shift, uint8_t semitones, uint8_t cents){
   //First the trivial case of CENTER_PITCH_SHIFT:
   if(pitch_shift == CENTER_PITCH_SHIFT){
     return midi_freqs[note];
   }
-  else if(pitch_shift < CENTER_PITCH_SHIFT){
-    //adjust the pitch down based on the difference between pitch_shift and CENTER_PITCH_SHIFT
-    //TIM: This code is bad and you should feel bad
-    uint16_t adjustment_factor = abs(pitch_shift)/8192;
-    float frequency_multiplier = 2^(-adjustment_factor/12);
-    uint32_t adjusted_frequency = midi_freqs[note]*frequency_multiplier;
-    Serial.print(note);
-    Serial.print(":");
-    Serial.println(pitch_shift);
-    Serial.print(midi_freqs[note]);
-    Serial.print(":");
-    Serial.print(frequency_multiplier);
-    Serial.print(":");
-    Serial.println(adjusted_frequency);
-    return adjusted_frequency;
-
-  }
-  else if(pitch_shift > CENTER_PITCH_SHIFT){
-    //adjust the pitch down based on the difference between pitch_shift and CENTER_PITCH_SHIFT
-    //TIM: This code is bad and you should feel bad
-    uint16_t adjustment_factor = abs(pitch_shift)/8192;
-    float frequency_multiplier = 2^(adjustment_factor/12);
-    uint32_t adjusted_frequency = midi_freqs[note]*frequency_multiplier;
-    return adjusted_frequency;
-  }
   else{
-    //this shouldn't happen, but return the default if nothing else worked for some reason.
-    return midi_freqs[current_note];
+    //TIM: Fix the bendy maths to make things sound gooder.
+    //this is the max offset from the center in cents. 
+    //Pitch bend can go from note-max_offset to note+max_offset.
+    uint32_t max_offset_cents = semitones*100 + cents;
+    //this takes the pitch_shift and maps it to the corresponding number of cents 
+    int32_t pitch_shift_offset = map(pitch_shift, -8192, 8192, -max_offset_cents, max_offset_cents);
+    //this converts from cents to a ratio of frequencies such that frequency_ratio = f_out/f_in
+    //musical note frequencies are calculated using 2^(n/12) where n is a note number.
+    //since we're using cents here, we need to divide by 100 before dividing by 12. This works out the same as dividing by 1200, or the number of cents in an octave
+    //to account for the fact that all our 'frequencies' in this code are inverted frequency in us, we just need to invert the frequency ratio
+    //We can invert the frequency ratio by making the pitch_shift_offset negative thanks to how exponents work.
+    //thanks to these optimizations, we can get away with a single division operation and the exponential operation using floats, and the rest remains integer math.
+    float frequency_ratio = pow(2.0F,(-(float)pitch_shift_offset/1200.0F));
+    //with the frequency knows, we need to multiply the ratio by our base note frequency to get the actual adjusted_frequency value.
+    //one last float multiplication, and we're back to integer math everywhere. Hopefully it won't be too slow.
+    uint32_t adjusted_frequency = (uint32_t)(frequency_ratio*midi_freqs[note]);
+
+    return adjusted_frequency;
   }
 }
 
@@ -368,16 +387,9 @@ uint32_t oMIDItone::pitch_adjusted_frequency(uint8_t note, int16_t pitch_shift){
 void oMIDItone::measure_frequency(){
   //this first bit is calculating the average continuously and storing it in current_freq
   if(is_rising_edge()){
-    uint32_t currently_desired_freq = pitch_adjusted_frequency(current_note, current_oMIDItone_pitch_shift[current_channel]);
     //sanity check on the reading - it should never be more than ALLOWABLE_FREQUENCY_READING_VARIANCE percent off of the desired frequency.
-    #ifdef PITCH_DEBUG
-      Serial.print("LRE: ");
-      Serial.println(last_rising_edge);
-      Serial.print("current_adjusted_frequency: ");
-      Serial.println(currently_desired_freq);
-    #endif
-    if( (last_rising_edge > (currently_desired_freq*(100-ALLOWABLE_FREQUENCY_READING_VARIANCE)/100)) && 
-        (last_rising_edge < (currently_desired_freq*(100+ALLOWABLE_FREQUENCY_READING_VARIANCE)/100))
+    if( (last_rising_edge > (current_desired_freq*(100-ALLOWABLE_FREQUENCY_READING_VARIANCE)/100)) && 
+        (last_rising_edge < (current_desired_freq*(100+ALLOWABLE_FREQUENCY_READING_VARIANCE)/100))
       ){
       //if things are compromised, reset the last_rising_edge and start over:
       if(pitch_correction_has_been_compromised){
@@ -426,8 +438,6 @@ void oMIDItone::adjust_frequency(){
   //the next bit will adjust the current jittered resistance value up or down depending on how close the current_freq is to the desired frequency of the current_note, and store it in the midi_to_resistance array
   if(last_adjust_time > TIME_BETWEEN_FREQUENCY_CORRECTIONS){
     //this determines the allowable range that the frequency can be in to avoid triggering a retune:
-    //First adjust for pitch shift if any:
-    uint32_t current_desired_freq = pitch_adjusted_frequency(current_note, current_oMIDItone_pitch_shift[current_channel]);
 
     //this is the range of frequencies acceptable for the current pitch-shifted note being played.
     uint32_t max_allowable_freq = current_desired_freq*(100-ALLOWABLE_NOTE_ERROR)/100;
