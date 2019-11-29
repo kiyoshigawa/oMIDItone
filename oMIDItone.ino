@@ -17,8 +17,11 @@ Update 2019-11-10: Added MIDI functionality to control various aspects of the oM
 #include <Adafruit_NeoPixel.h>
 #include "lighting_control.h"
 
-//comment this to disable serial functions for testing notes.
-#define DEBUG
+//this will print messages on system startup and init
+#define BOOT_DEBUG
+
+//This will turn on/off the debug note messages when notes are added or removed via MIDI
+//#define NOTE_DEBUG
 
 //defines to make the head selection code more readable:
 #define AVAILABLE true
@@ -143,50 +146,50 @@ uint16_t om6_r_channel = 15;
 uint16_t om6_leds[NUM_LEDS_PER_HEAD] = {35, 34, 33, 32, 31, 30, 71, 70, 69, 68, 67, 66, 36, 37, 38, 39, 40, 41};
 
 //this array controls the type of notes being sent to each head on note_trigger events when they are active:
-uint16_t note_trigger_type[NUM_OMIDITONES] = {DEFAULT_TRIGGER_MODE, 
-                                              DEFAULT_TRIGGER_MODE, 
-                                              DEFAULT_TRIGGER_MODE, 
-                                              DEFAULT_TRIGGER_MODE, 
-                                              DEFAULT_TRIGGER_MODE, 
-                                              DEFAULT_TRIGGER_MODE};
+uint16_t note_trigger_type[NUM_OMIDITONES] = {	DEFAULT_TRIGGER_MODE,
+												DEFAULT_TRIGGER_MODE,
+												DEFAULT_TRIGGER_MODE,
+												DEFAULT_TRIGGER_MODE,
+												DEFAULT_TRIGGER_MODE,
+												DEFAULT_TRIGGER_MODE};
 
 //these are the Animation objects for the heads above - they will control the animation per-head.
-Animation om1_animation = Animation(om1_leds, NUM_LEDS_PER_HEAD, 
-                                    (DEFAULT_BG_MODE | DEFAULT_FG_MODE), 
-                                    rb_array[DEFAULT_OM1_BG_RAINBOW], 
-                                    rb_array[DEFAULT_OM1_FG_RAINBOW], 
-                                    rb_array[DEFAULT_OM1_TRIGGER_RAINBOW], 
-                                    LC_DEFAULT_REFRESH_RATE);
-Animation om2_animation = Animation(om2_leds, NUM_LEDS_PER_HEAD, 
-                                    (DEFAULT_BG_MODE | DEFAULT_FG_MODE), 
-                                    rb_array[DEFAULT_OM2_BG_RAINBOW], 
-                                    rb_array[DEFAULT_OM2_FG_RAINBOW], 
-                                    rb_array[DEFAULT_OM2_TRIGGER_RAINBOW], 
-                                    LC_DEFAULT_REFRESH_RATE);
-Animation om3_animation = Animation(om3_leds, NUM_LEDS_PER_HEAD, 
-                                    (DEFAULT_BG_MODE | DEFAULT_FG_MODE), 
-                                    rb_array[DEFAULT_OM3_BG_RAINBOW], 
-                                    rb_array[DEFAULT_OM3_FG_RAINBOW], 
-                                    rb_array[DEFAULT_OM3_TRIGGER_RAINBOW], 
-                                    LC_DEFAULT_REFRESH_RATE);
-Animation om4_animation = Animation(om4_leds, NUM_LEDS_PER_HEAD, 
-                                    (DEFAULT_BG_MODE | DEFAULT_FG_MODE), 
-                                    rb_array[DEFAULT_OM4_BG_RAINBOW], 
-                                    rb_array[DEFAULT_OM4_FG_RAINBOW], 
-                                    rb_array[DEFAULT_OM4_TRIGGER_RAINBOW], 
-                                    LC_DEFAULT_REFRESH_RATE);
-Animation om5_animation = Animation(om5_leds, NUM_LEDS_PER_HEAD, 
-                                    (DEFAULT_BG_MODE | DEFAULT_FG_MODE), 
-                                    rb_array[DEFAULT_OM5_BG_RAINBOW], 
-                                    rb_array[DEFAULT_OM5_FG_RAINBOW], 
-                                    rb_array[DEFAULT_OM5_TRIGGER_RAINBOW], 
-                                    LC_DEFAULT_REFRESH_RATE);
-Animation om6_animation = Animation(om6_leds, NUM_LEDS_PER_HEAD, 
-                                    (DEFAULT_BG_MODE | DEFAULT_FG_MODE), 
-                                    rb_array[DEFAULT_OM6_BG_RAINBOW], 
-                                    rb_array[DEFAULT_OM6_FG_RAINBOW], 
-                                    rb_array[DEFAULT_OM6_TRIGGER_RAINBOW], 
-                                    LC_DEFAULT_REFRESH_RATE);
+Animation om1_animation = Animation(om1_leds, NUM_LEDS_PER_HEAD,
+									(DEFAULT_BG_MODE | DEFAULT_FG_MODE),
+									rb_array[DEFAULT_OM1_BG_RAINBOW],
+									rb_array[DEFAULT_OM1_FG_RAINBOW],
+									rb_array[DEFAULT_OM1_TRIGGER_RAINBOW],
+									LC_DEFAULT_REFRESH_RATE);
+Animation om2_animation = Animation(om2_leds, NUM_LEDS_PER_HEAD,
+									(DEFAULT_BG_MODE | DEFAULT_FG_MODE),
+									rb_array[DEFAULT_OM2_BG_RAINBOW],
+									rb_array[DEFAULT_OM2_FG_RAINBOW],
+									rb_array[DEFAULT_OM2_TRIGGER_RAINBOW],
+									LC_DEFAULT_REFRESH_RATE);
+Animation om3_animation = Animation(om3_leds, NUM_LEDS_PER_HEAD,
+									(DEFAULT_BG_MODE | DEFAULT_FG_MODE),
+									rb_array[DEFAULT_OM3_BG_RAINBOW],
+									rb_array[DEFAULT_OM3_FG_RAINBOW],
+									rb_array[DEFAULT_OM3_TRIGGER_RAINBOW],
+									LC_DEFAULT_REFRESH_RATE);
+Animation om4_animation = Animation(om4_leds, NUM_LEDS_PER_HEAD,
+									(DEFAULT_BG_MODE | DEFAULT_FG_MODE),
+									rb_array[DEFAULT_OM4_BG_RAINBOW],
+									rb_array[DEFAULT_OM4_FG_RAINBOW],
+									rb_array[DEFAULT_OM4_TRIGGER_RAINBOW],
+									LC_DEFAULT_REFRESH_RATE);
+Animation om5_animation = Animation(om5_leds, NUM_LEDS_PER_HEAD,
+									(DEFAULT_BG_MODE | DEFAULT_FG_MODE),
+									rb_array[DEFAULT_OM5_BG_RAINBOW],
+									rb_array[DEFAULT_OM5_FG_RAINBOW],
+									rb_array[DEFAULT_OM5_TRIGGER_RAINBOW],
+									LC_DEFAULT_REFRESH_RATE);
+Animation om6_animation = Animation(om6_leds, NUM_LEDS_PER_HEAD,
+									(DEFAULT_BG_MODE | DEFAULT_FG_MODE),
+									rb_array[DEFAULT_OM6_BG_RAINBOW],
+									rb_array[DEFAULT_OM6_FG_RAINBOW],
+									rb_array[DEFAULT_OM6_TRIGGER_RAINBOW],
+									LC_DEFAULT_REFRESH_RATE);
 
 //This is the LED strip object to control all the lighting on the board
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(LED_TOTAL_NUM, LED_DATA_PIN, LED_COLOR_ORDER + LED_SPEED);
@@ -201,17 +204,23 @@ elapsedMicros last_lighting_update;
 
 //declare the oMIDItone objects:
 oMIDItone oms[NUM_OMIDITONES] = {
-  oMIDItone(om1_se_pin, om1_sd_pin, om1_cs1_pin, om1_cs2_pin, om1_analog_feedback_pin, om1_l_channel, om1_r_channel, om1_l_min, om1_l_max, om1_r_min, om1_r_max, om1_leds, &om1_animation),
-  oMIDItone(om2_se_pin, om2_sd_pin, om2_cs1_pin, om2_cs2_pin, om2_analog_feedback_pin, om2_l_channel, om2_r_channel, om2_l_min, om2_l_max, om2_r_min, om2_r_max, om2_leds, &om2_animation),
-  oMIDItone(om3_se_pin, om3_sd_pin, om3_cs1_pin, om3_cs2_pin, om3_analog_feedback_pin, om3_l_channel, om3_r_channel, om3_l_min, om3_l_max, om3_r_min, om3_r_max, om3_leds, &om3_animation),
-  oMIDItone(om4_se_pin, om4_sd_pin, om4_cs1_pin, om4_cs2_pin, om4_analog_feedback_pin, om4_l_channel, om4_r_channel, om4_l_min, om4_l_max, om4_r_min, om4_r_max, om4_leds, &om4_animation),
-  oMIDItone(om5_se_pin, om5_sd_pin, om5_cs1_pin, om5_cs2_pin, om5_analog_feedback_pin, om5_l_channel, om5_r_channel, om5_l_min, om5_l_max, om5_r_min, om5_r_max, om5_leds, &om5_animation),
-  oMIDItone(om6_se_pin, om6_sd_pin, om6_cs1_pin, om6_cs2_pin, om6_analog_feedback_pin, om6_l_channel, om6_r_channel, om6_l_min, om6_l_max, om6_r_min, om6_r_max, om6_leds, &om6_animation)
+	oMIDItone(	om1_se_pin, om1_sd_pin, om1_cs1_pin, om1_cs2_pin, om1_analog_feedback_pin, om1_l_channel, 
+				om1_r_channel, om1_l_min, om1_l_max, om1_r_min, om1_r_max, om1_leds, &om1_animation),
+	oMIDItone(om2_se_pin, om2_sd_pin, om2_cs1_pin, om2_cs2_pin, om2_analog_feedback_pin, om2_l_channel, 
+				om2_r_channel, om2_l_min, om2_l_max, om2_r_min, om2_r_max, om2_leds, &om2_animation),
+	oMIDItone(om3_se_pin, om3_sd_pin, om3_cs1_pin, om3_cs2_pin, om3_analog_feedback_pin, om3_l_channel, 
+				om3_r_channel, om3_l_min, om3_l_max, om3_r_min, om3_r_max, om3_leds, &om3_animation),
+	oMIDItone(om4_se_pin, om4_sd_pin, om4_cs1_pin, om4_cs2_pin, om4_analog_feedback_pin, om4_l_channel, 
+				om4_r_channel, om4_l_min, om4_l_max, om4_r_min, om4_r_max, om4_leds, &om4_animation),
+	oMIDItone(om5_se_pin, om5_sd_pin, om5_cs1_pin, om5_cs2_pin, om5_analog_feedback_pin, om5_l_channel, 
+				om5_r_channel, om5_l_min, om5_l_max, om5_r_min, om5_r_max, om5_leds, &om5_animation),
+	oMIDItone(om6_se_pin, om6_sd_pin, om6_cs1_pin, om6_cs2_pin, om6_analog_feedback_pin, om6_l_channel, 
+				om6_r_channel, om6_l_min, om6_l_max, om6_r_min, om6_r_max, om6_leds, &om6_animation)
 };
 
-//this is a variable storing the pitch shift value last received over MIDI:
-//Note the teensy library uses a signed pitch shift centered on 0 instead of the MIDI standard of centering on 8192.
-int16_t current_pitch_shift[NUM_MIDI_CHANNELS];
+//this is a variable storing the pitch bend value last received over MIDI:
+//Note the teensy library uses a signed pitch bend centered on 0 instead of the MIDI standard of centering on 8192.
+int16_t current_pitch_bend[NUM_MIDI_CHANNELS];
 
 //this is an array that tracks whether a note is currently on or off.
 uint8_t current_note_array[NUM_MIDI_NOTES];
@@ -228,15 +237,15 @@ uint8_t num_current_notes = 0;
 //this is a bool to let the controller know when it needs to reassign notes to the heads.
 bool note_has_changed = false;
 
-//this is a bool to let the controller know when it needs to reassign pitch shift to the heads.
+//this is a bool to let the controller know when it needs to reassign pitch bend to the heads.
 bool pitch_has_changed = false;
 
 //this updates all the heads when MIDI CC pitch bend messages are received:
 bool pitch_bend_range_has_changed = false;
 
 //these globals store the value of the pitch range in semitones and cents
-uint8_t MIDI_pitch_bend_num_semitones = DEFAULT_MIDI_PITCH_BEND_SEMITONES;
-uint8_t MIDI_pitch_bend_num_cents = DEFAULT_MIDI_PITCH_BEND_CENTS;
+uint8_t MIDI_max_pitch_bend_num_semitones = DEFAULT_MIDI_PITCH_BEND_SEMITONES;
+uint8_t MIDI_max_pitch_bend_num_cents = DEFAULT_MIDI_PITCH_BEND_CENTS;
 
 //This tracks the current head so the iteration isn't always in the same place.
 int head_offset = 0;
@@ -258,243 +267,239 @@ MIDI_CREATE_INSTANCE(HardwareSerial, Serial1, MIDI);
 
 //this is just a quick function to print the note array with some formatting:
 void print_current_note_array(){
-  if(num_current_notes > 0){
-    Serial.print("Notes: [");
-    if(num_current_notes > 0){
-      for(int i=0; i<num_current_notes-1; i++){
-        Serial.print(current_note_array[i]);
-        Serial.print(", ");
-      }
-    }
-    Serial.print(current_note_array[num_current_notes-1]);
-    Serial.println("]");
-  }
-  else{
-    Serial.println("Notes: []");
-  }
+	#ifdef NOTE_DEBUG
+		if(num_current_notes > 0){
+			Serial.print("Notes: [");
+			if(num_current_notes > 0){
+				for(int i=0; i<num_current_notes-1; i++){
+					Serial.print(current_note_array[i]);
+					Serial.print(", ");
+				}
+			}
+			Serial.print(current_note_array[num_current_notes-1]);
+			Serial.println("]");
+		} else {
+			Serial.println("Notes: []");
+		}
+	#endif
 }
 
 //This will check to see if a note is in the current_note_array and return the position of the note if it finds one, or return NO_NOTE if it does not.
 int check_note(uint8_t note){
-  //Iterate through the array, and return the note position if it is found.
-  if(num_current_notes == 0){
-    return NO_NOTE;
-  }
-  else{
-    for(int i=0; i<num_current_notes; i++){
-      if(current_note_array[i] == note){
-        return i;
-      }
-    }
-    //if no note is found, return NO_NOTE;
-    return NO_NOTE;
-  }
+	//Iterate through the array, and return the note position if it is found.
+	if(num_current_notes == 0){
+		return NO_NOTE;
+	} else {
+		for(int i=0; i<num_current_notes; i++){
+			if(current_note_array[i] == note){
+				return i;
+			}
+		}
+		//if no note is found, return NO_NOTE;
+		return NO_NOTE;
+	}
 }
 
 //This will add a new note to the end of the current_note_array, or relocate the note to the end if it is already in the array.
 //It will also add a velocity value corresponding to that note to the current_velocity_array.
 void add_note(uint8_t note, uint8_t velocity, uint8_t channel){
-  uint8_t note_position = check_note(note);
-  //if the note isn't already in the array, put it at the end of the array.
-  if(note_position == NO_NOTE){
-    current_note_array[num_current_notes] = note;
-    current_velocity_array[num_current_notes] = velocity;
-    current_channel_array[num_current_notes] = channel;
-    num_current_notes++;
-  }
-  //if it is in the array, put the note at the end and shift everything back down to where the note used to be.
-  else{
-    for(int i=note_position; i<num_current_notes; i++){
-      current_note_array[i] = current_note_array[i+1];
-      current_velocity_array[i] = current_velocity_array[i+1];
-      current_channel_array[i] = current_channel_array[i+1];
-    }
-    current_note_array[num_current_notes-1] = note;
-    current_velocity_array[num_current_notes-1] = velocity;
-    current_channel_array[num_current_notes-1] = channel;
-  }
+	uint8_t note_position = check_note(note);
+	//if the note isn't already in the array, put it at the end of the array.
+	if(note_position == NO_NOTE){
+		current_note_array[num_current_notes] = note;
+		current_velocity_array[num_current_notes] = velocity;
+		current_channel_array[num_current_notes] = channel;
+		num_current_notes++;
+	} else {
+		//if it is in the array, put the note at the end and bend everything back down to where the note used to be.
+		for(int i=note_position; i<num_current_notes; i++){
+			current_note_array[i] = current_note_array[i+1];
+			current_velocity_array[i] = current_velocity_array[i+1];
+			current_channel_array[i] = current_channel_array[i+1];
+		}
+		current_note_array[num_current_notes-1] = note;
+		current_velocity_array[num_current_notes-1] = velocity;
+		current_channel_array[num_current_notes-1] = channel;
+	}
 }
 
-//If a note is in the current_note_array, this will remove it, and the corresponding velocity will be removed from the current_velocity_array 
-//and then it will shift the rest of the values down to fill in the gap.
+//If a note is in the current_note_array, this will remove it, and the corresponding velocity will be removed from the current_velocity_array
+//and then it will bend the rest of the values down to fill in the gap.
 void remove_note(uint8_t note){
-  uint8_t note_position = check_note(note);
-  //if the note is in the note array, remove it and shift down any other notes.
-  if(note_position != NO_NOTE){
-    for(int i=note_position; i<num_current_notes; i++){
-      current_note_array[i] = current_note_array[i+1];
-      current_velocity_array[i] = current_velocity_array[i+1];
-      current_channel_array[i] = current_channel_array[i+1];
-    }
-    num_current_notes--;
-  }
-  else{
-    //Do nothing
-  }
-  //need to get the head to immediately stop playing the note as well:
-  for(int i=0; i<NUM_OMIDITONES; i++){
-    if(oms[i].currently_playing_note() == note){
-      oms[i].note_off(note);
-    }
-  }
+	uint8_t note_position = check_note(note);
+	//if the note is in the note array, remove it and bend down any other notes.
+	if(note_position != NO_NOTE){
+		for(int i=note_position; i<num_current_notes; i++){
+			current_note_array[i] = current_note_array[i+1];
+			current_velocity_array[i] = current_velocity_array[i+1];
+			current_channel_array[i] = current_channel_array[i+1];
+		}
+		num_current_notes--;
+	} else {
+		//Do nothing
+	}
+	//need to get the head to immediately stop playing the note as well:
+	for(int i=0; i<NUM_OMIDITONES; i++){
+		if(oms[i].currently_playing_note() == note){
+			oms[i].note_off(note);
+		}
+	}
 
-  //and finally change the head_order_array to match the pending_head_order_array when all notes are off
-  if(num_current_notes <= 0){
-    for(int i=0; i<NUM_OMIDITONES; i++){
-      head_order_array[i] = pending_head_order_array[i];
-    }
-  }
+	//and finally change the head_order_array to match the pending_head_order_array when all notes are off
+	if(num_current_notes <= 0){
+		for(int i=0; i<NUM_OMIDITONES; i++){
+			head_order_array[i] = pending_head_order_array[i];
+		}
+	}
 }
 
 //this function moves the head in question to the end of the head_order_array, and shuffles the remaining heads down into its place.
 void pending_head_order_to_end(uint8_t head_number){
-  //don't need to iterate to the last one, because if the head_number is in the last position already, we're good
-  for(int i=0; i<NUM_OMIDITONES-1; i++){
-    if(pending_head_order_array[i] == head_number){
-      //set the current position to the next head in line
-      pending_head_order_array[i] = pending_head_order_array[i+1];
-      //and move the head in question down the line until it's in the last place
-      pending_head_order_array[i+1] = head_number;
-    }
-  }
+	//don't need to iterate to the last one, because if the head_number is in the last position already, we're good
+	for(int i=0; i<NUM_OMIDITONES-1; i++){
+		if(pending_head_order_array[i] == head_number){
+			//set the current position to the next head in line
+			pending_head_order_array[i] = pending_head_order_array[i+1];
+			//and move the head in question down the line until it's in the last place
+			pending_head_order_array[i+1] = head_number;
+		}
+	}
 }
 
-//this is a function to send commands to the oMIDItones connected to this controller based on the note_status_array and current_pitch_shift
+//this is a function to send commands to the oMIDItones connected to this controller based on the note_status_array and current_pitch_bend
 void update_oMIDItones(){
-  //First set the pitch for all the running oMIDItones.
-  //this can just iterate through all of them in order, since it doesn't require load balancing like note_on.
-  if(pitch_has_changed){
-    for(int i=0; i<NUM_OMIDITONES; i++){
-      for(int channel=0; channel<NUM_MIDI_CHANNELS; channel++){
-        oms[i].set_pitch_shift(current_pitch_shift[channel], channel);
-      }
-    }
-    pitch_has_changed = false;
-  }
-  //this will set the pitch bend range whenever it is changed:
-  if(pitch_bend_range_has_changed){
-    for(int i=0; i<NUM_OMIDITONES; i++){
-      for(int channel=0; channel<NUM_MIDI_CHANNELS; channel++){
-        oms[i].set_pitch_bend(MIDI_pitch_bend_num_semitones, MIDI_pitch_bend_num_cents);
-      }
-    }
-    pitch_bend_range_has_changed = false;
-  }
-  //only update if a note has changed state:
-  if(note_has_changed){
-    //we need a couple variables that we can use to iterate through all the heads in the right order.
-    bool head_state[NUM_OMIDITONES];
-    for(int i=0; i<NUM_OMIDITONES; i++){
-      //mark all heads as available initially
-      head_state[i] = AVAILABLE;
-    }
-    //only do this if there are notes to be played.
-    if(num_current_notes > 0){
-      //iterate through the active notes so that we can see if any heads are available to play them.
-      //we need to go from the end of the list backwards.
-      for(int n=num_current_notes-1; n>=0; n--){
-        //iterate through the array of unassigned heads.
-        for(int h=0; h<NUM_OMIDITONES; h++){
-          //only check the notes if the head hasn't been assigned.
-          if(head_state[h] == AVAILABLE){
-            if( oms[head_order_array[h]].can_play_note(current_note_array[n], current_pitch_shift[current_channel_array[n]]) ){
-              //tell the head to play the note.
-              oms[head_order_array[h]].note_on(current_note_array[n], current_velocity_array[n], current_channel_array[n]);
-              //trigger a lighting update on the head
-              if(note_trigger_is_enabled){
-                oms[head_order_array[h]].animation->trigger_event(note_trigger_type[head_order_array[h]]);
-              }
-              //remove the head from the unassigned heads array
-              head_state[h] = NOT_AVAILABLE;
-              //move the head to the end of the head_order_array
-              pending_head_order_to_end(head_order_array[h]);
-              #ifdef DEBUG
-                Serial.print("Head ");
-                Serial.print(head_order_array[h]);
-                Serial.print(" is playing note ");
-                Serial.print(current_note_array[n]);
-                Serial.println(".");
-              #endif
-              //break the head for loop so no other heads try to play the same note:
-              break;
-            } //can_play_note
-          } //head_state == AVAILABLE
-        } //head for loop
-      } //note for loop
-      //reset the state variable once everything has been tried/assigned.
-      note_has_changed = false;
-    } //num_current_notes > 0
-  } //note has changed
+	//First set the pitch for all the running oMIDItones.
+	//this can just iterate through all of them in order, since it doesn't require load balancing like note_on.
+	if(pitch_has_changed){
+		for(int i=0; i<NUM_OMIDITONES; i++){
+			for(int channel=0; channel<NUM_MIDI_CHANNELS; channel++){
+				oms[i].set_pitch_bend(current_pitch_bend[channel], channel);
+			}
+		}
+		pitch_has_changed = false;
+	}
+	//this will set the pitch bend range whenever it is changed:
+	if(pitch_bend_range_has_changed){
+		for(int i=0; i<NUM_OMIDITONES; i++){
+			for(int channel=0; channel<NUM_MIDI_CHANNELS; channel++){
+				oms[i].set_max_pitch_bend(MIDI_max_pitch_bend_num_semitones, MIDI_max_pitch_bend_num_cents);
+			}
+		}
+		pitch_bend_range_has_changed = false;
+	}
+	//only update if a note has changed state:
+	//TIM: Reevaluate how heads are assigned to noted. Maybe switch to iterating through the heads and assigning them the first note available instead of the current way?
+	if(note_has_changed){
+		//we need a couple variables that we can use to iterate through all the heads in the right order.
+		bool head_state[NUM_OMIDITONES];
+		for(int i=0; i<NUM_OMIDITONES; i++){
+			//mark all heads as available initially
+			head_state[i] = AVAILABLE;
+		}
+		//only do this if there are notes to be played.
+		if(num_current_notes > 0){
+			//iterate through the active notes so that we can see if any heads are available to play them.
+			//we need to go from the end of the list backwards.
+			for(int n=num_current_notes-1; n>=0; n--){
+				//iterate through the array of unassigned heads.
+				for(int h=0; h<NUM_OMIDITONES; h++){
+					//only check the notes if the head hasn't been assigned.
+					if(head_state[h] == AVAILABLE){
+						if(oms[head_order_array[h]].note_on(current_note_array[n], current_velocity_array[n], current_channel_array[n])){;
+							//trigger a lighting update on the head
+							#ifdef NOTE_DEBUG
+								Serial.print("H");
+								Serial.print(head_order_array[h]);
+								Serial.print(": Playing Note ");
+								Serial.println(current_note_array[n]);
+							#endif
+							if(note_trigger_is_enabled){
+								oms[head_order_array[h]].animation->trigger_event(note_trigger_type[head_order_array[h]]);
+							}
+							//remove the head from the unassigned heads array
+							head_state[h] = NOT_AVAILABLE;
+							//move the head to the end of the head_order_array
+							pending_head_order_to_end(head_order_array[h]);
+							//break the head for loop so no other heads try to play the same note:
+							break;
+						} //note_on
+					} //head_state == AVAILABLE
+				} //head for loop
+			} //note for loop
+			//reset the state variable once everything has been tried/assigned.
+			note_has_changed = false;
+		} //num_current_notes > 0
+	} //note has changed
 
-  //Finally, this will update the oMIDItone objects:
-  for(int i=0; i<NUM_OMIDITONES; i++){
-    oms[i].update();
-  }
+	//Finally, this will update the oMIDItone objects:
+	for(int i=0; i<NUM_OMIDITONES; i++){
+		oms[i].update();
+	}
 }
 
 void setup(){
-  #ifdef DEBUG
-    Serial.begin(9600);
-    delay(5000); //wait for serial
-    Serial.println("Welcome to oMIDItone.");
-    Serial.println("Beginning initialization - this may take several minutes...");
-  #endif
+	#ifdef BOOT_DEBUG
+		Serial.begin(9600);
+		delay(5000); //wait for serial
+		Serial.println("Welcome to oMIDItone.");
+		Serial.println("Beginning initialization - this may take several minutes...");
+	#endif
 
-  //initialize the pitch shift to the default value of no pitch shift:
-  for(int i=0; i<NUM_MIDI_CHANNELS; i++){
-    current_pitch_shift[i] = CENTER_PITCH_SHIFT;
-  }
-  pitch_has_changed = true;
+	//initialize the pitch bend to the default value of no pitch bend:
+	for(int i=0; i<NUM_MIDI_CHANNELS; i++){
+		current_pitch_bend[i] = CENTER_PITCH_BEND;
+	}
+	pitch_has_changed = true;
 
-  //initialize the head order array and pending_head_order_array to be 0-5 in order:
-  for(int i=0; i<NUM_OMIDITONES; i++){
-    head_order_array[i] = i;
-    pending_head_order_array[i] = i;
-  }
+	//initialize the head order array and pending_head_order_array to be 0-5 in order:
+	for(int i=0; i<NUM_OMIDITONES; i++){
+		head_order_array[i] = i;
+		pending_head_order_array[i] = i;
+	}
 
-  //set up the lighting controller with the animations
-  lc.init();
-  for(int i=0; i<NUM_OMIDITONES; i++){
-    lc.add_animation(oms[i].animation);
-  }
-  lc.update();
+	//set up the lighting controller with the animations
+	lc.init();
+	for(int i=0; i<NUM_OMIDITONES; i++){
+		lc.add_animation(oms[i].animation);
+	}
+	lc.update();
 
-  //init the om objects - This is going to take a while - like several minutes:
-  for(int i=0; i<NUM_OMIDITONES; i++){
-    //init the head
-    oms[i].init();
-  }
+	//init the om objects - This is going to take a while - like several minutes:
+	for(int i=0; i<NUM_OMIDITONES; i++){
+		//init the head
+		oms[i].init();
+	}
 
-  //call out MIDI functions
-  usbMIDI.setHandleNoteOff(OnNoteOff);
-  usbMIDI.setHandleNoteOn(OnNoteOn);
-  usbMIDI.setHandlePitchChange(OnPitchChange);
-  usbMIDI.setHandleControlChange(OnControlChange);
+	//call out MIDI functions
+	usbMIDI.setHandleNoteOff(OnNoteOff);
+	usbMIDI.setHandleNoteOn(OnNoteOn);
+	usbMIDI.setHandlePitchChange(OnPitchChange);
+	usbMIDI.setHandleControlChange(OnControlChange);
 
-  //Hardware MIDI init.
-  MIDI.begin(MIDI_CHANNEL_OMNI);
+	//Hardware MIDI init.
+	MIDI.begin(MIDI_CHANNEL_OMNI);
 
-  #ifdef DEBUG
-    Serial.println("Init Complete, awaiting MIDI input.");
-  #endif
+	#ifdef BOOT_DEBUG
+		Serial.println("Init Complete, awaiting MIDI input.");
+	#endif
 }
 
 void loop(){
-  
-  //This will read for MIDI notes and start/stop the notes based on MIDI input:
-  usbMIDI.read();
-  //This will check the hardware MIDI channels and start/stop the notes based on MIDI input.
-  read_hardware_MIDI();
-  //This will decide which oMIDItone to use for which note, and update the status.
-  update_oMIDItones();
-  //this will update all lighting functions on a regular basis
-  //update_lighting(); //old - delete once lc is working
-  if(lighting_is_enabled){
-    int lighting_data_was_sent = lc.update();
-    if(lighting_data_was_sent == LC_STRIP_WRITTEN){
-      for(int h=0; h<NUM_OMIDITONES; h++){
-        oms[h].reset_pitch_correction();
-      }
-    }
-  }
+
+	//This will read for MIDI notes and start/stop the notes based on MIDI input:
+	usbMIDI.read();
+	//This will check the hardware MIDI channels and start/stop the notes based on MIDI input.
+	read_hardware_MIDI();
+	//This will decide which oMIDItone to use for which note, and update the status.
+	update_oMIDItones();
+	//this will update all lighting functions on a regular basis
+	//update_lighting(); //old - delete once lc is working
+	if(lighting_is_enabled){
+		int lighting_data_was_sent = lc.update();
+		if(lighting_data_was_sent == LC_STRIP_WRITTEN){
+			for(int h=0; h<NUM_OMIDITONES; h++){
+				oms[h].reset_pitch_correction();
+			}
+		}
+	}
 }

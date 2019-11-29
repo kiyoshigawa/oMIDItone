@@ -33,7 +33,7 @@ void loop(){
             digitalWrite(sound_pin, HIGH);
             last_state_change = 0;
         }
-        else{
+        else {
             digitalWrite(sound_pin, LOW);
             last_state_change = 0;
         }

@@ -1,7 +1,7 @@
 This is intended to be a general overview explaining the logic in how the oMIDItone handles selecting which MIDI notes to play.
 
 The oMIDItone will make an array of all currently-on notes. This will be updated by MIDI Note-On and Note-Off messages.
-Any pitch-shifting will apply to all notes without exception.
+Any pitch-bending will apply to all notes without exception.
 
 There are several scenarios that can occur here. Unchanging parameters:
     -There are 127 MIDI notes that can be played, any of which could be on.

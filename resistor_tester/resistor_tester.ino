@@ -68,7 +68,7 @@ void set_resistance(uint16_t resistance){
     if(resistance % 2){
       set_pot(cs2_pin, 0);
     }
-    else{
+    else {
       set_pot(cs2_pin, 1);
     }
     
@@ -82,7 +82,7 @@ void set_resistance(uint16_t resistance){
     set_pot(cs1_pin, 0);
     set_pot(cs2_pin, 0);
   }
-  else{
+  else {
     set_pot(cs1_pin, 256);
     set_pot(cs2_pin, 256);
   }
