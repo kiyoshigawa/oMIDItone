@@ -498,7 +498,7 @@ void loop(){
 		int lighting_data_was_sent = lc.update();
 		if(lighting_data_was_sent == LC_STRIP_WRITTEN){
 			for(int h=0; h<NUM_OMIDITONES; h++){
-				oms[h].reset_pitch_correction();
+				oms[h].cancel_pitch_correction();
 			}
 		}
 	}

@@ -173,7 +173,6 @@ bool oMIDItone::note_on(uint16_t note, uint16_t velocity, uint16_t channel){
 		current_note = NO_NOTE;
 		current_velocity = 0;
 		current_channel = NO_CHANNEL;
-		update();
 		return false;
 	}
 }
@@ -234,7 +233,7 @@ void oMIDItone::set_servos(uint16_t position){
 }
 
 //this will cancel the current pitch correction testing if anything disruptive happens during the testing to avoid incorrect corrections
-void oMIDItone::reset_pitch_correction(){
+void oMIDItone::cancel_pitch_correction(){
 	pitch_correction_has_been_compromised = true;
 }
 
@@ -457,7 +456,7 @@ void oMIDItone::measure_frequency(){
 	if(is_rising_edge()){
 		//sanity check on the reading - it should never be more than ALLOWABLE_FREQUENCY_READING_VARIANCE percent off of the desired frequency.
 		if( (last_rising_edge > (current_desired_freq*(100-ALLOWABLE_FREQUENCY_READING_VARIANCE)/100)) &&
-				(last_rising_edge < (current_desired_freq*(100+ALLOWABLE_FREQUENCY_READING_VARIANCE)/100))
+			(last_rising_edge < (current_desired_freq*(100+ALLOWABLE_FREQUENCY_READING_VARIANCE)/100))
 			){
 			//if things are compromised, reset the last_rising_edge and start over:
 			if(pitch_correction_has_been_compromised){
@@ -470,11 +469,11 @@ void oMIDItone::measure_frequency(){
 			} else {
 				recent_freqs[freq_reading_index] = last_rising_edge;
 				last_rising_edge = 0;
-				freq_reading_index++;
 				#ifdef PITCH_DEBUG
 					Serial.print("Frequency Successfully measured: ");
 					Serial.println(recent_freqs[freq_reading_index]);
 				#endif
+				freq_reading_index++;
 			}
 		} else {
 			//take action as if things are compromised and reset the last_rising_edge to start over:
@@ -495,7 +494,7 @@ void oMIDItone::measure_frequency(){
 		//only when you've had a valid reading should the frequency be adjusted
 		adjust_frequency();
 		//also update the measured_freqs array to be correct for the current resistasnce.
-		//TIM: Leaving this commented out for now, seems to prevent drifting over time, but required occasional hard resets
+		//TIM: Leaving this commented out for now, seems to prevent drifting over time, but requires occasional hard resets
 		//measured_freqs[current_resistance] = current_freq;
 	}
 }
@@ -561,7 +560,7 @@ void oMIDItone::adjust_frequency(){
 				Serial.println(current_resistance);
 			#endif
 		}
-	}
+	}//if(last_adjustment_time > MIN_TIME_BETWEEN_FREQUENCY_CORRECTIONS)
 }
 
 //This will check if a frequency can be played by an initialized oMIDItone object. freq in us.
